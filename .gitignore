@@ -29,3 +29,13 @@ toymain
 .settings
 Untitled.build
 gandalf
+
+# Dirac testing
+# Build logs
+*.log
+# Build reports
+*.optrpt
+# Result directories
+tests/*disc*.[0-9][0-9][0-9]
+# DiAL job output
+*.[eo][0-9][0-9][0-9][0-9][0-9]

@@ -19,30 +19,44 @@
 #  General Public License (http://www.gnu.org/licenses) for more details.
 #==================================================================================================
 
-
-CPP                = 
+MPICPP             = mpiicpc
+CPP                = icpc
 PYTHON             = python
 COMPILER_MODE      = FAST
 PRECISION          = DOUBLE
+# Switch off OpenMP while doing serial testing using Advisor and VTune
+# - otherwise the analyses are confusing.  May need to switch off
+# inlining as well for Advisor to see where things really are, but
+# that will certainly prevent vectorisation.
+#OPENMP             = 0
 OPENMP             = 1
 PYSNAP_PRECISION   = DOUBLE
 OUTPUT_LEVEL       = 1
 DEBUG_LEVEL        = 0
 BUILD_DEPENDENCIES = 1
 
-# FFTW libary flags and paths.  If paths are empty, tries standard default linux paths.
+# FFTW libary flags and paths.  If paths are empty, tries standard
+# default linux paths.  On DIaL the paths are set in CPATH and LIBRARY_PATH.
 #--------------------------------------------------------------------------------------------------
-FFTW               =
+FFTW               = 1
 FFTW_INCLUDE       =
 FFTW_LIBRARY       =
 
 
-# GNU Scientific library flags and paths.  If paths are empty, tries standard default linux paths.
+# GNU Scientific library flags and paths.  If paths are empty, tries standard default linux paths.  On DIaL the paths are set in CPATH and LIBRARY_PATH.
 #--------------------------------------------------------------------------------------------------
-GSL                =
+GSL                = 1
 GSL_INCLUDE        =
 GSL_LIBRARY        =
 
+
+# MKL flags and paths.  Use the link line advisor
+# https://software.intel.com/en-us/articles/intel-mkl-link-line-advisor
+# to set these.
+# --------------------------------------------------------------------------------------------------
+MKL                = 1
+MKL_INCLUDE        = -I${MKLROOT}/include
+MKL_LIBRARY        = -L${MKLROOT}/lib/intel64 -lmkl_intel_lp64 -lmkl_intel_thread -lmkl_core -liomp5 -lpthread -lm -ldl
 
 # Select location of python and numpy libraries.  If blank, make will try to
 # find the location of the libraries automatically using installed python

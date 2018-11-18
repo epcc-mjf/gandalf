@@ -41,7 +41,8 @@ VPATH +=$(PWD)/src/GradhSph:$(PWD)/src/Headers:$(PWD)/src/Hydrodynamics
 VPATH +=$(PWD)/src/Ic:$(PWD)/src/MeshlessFV:$(PWD)/src/Mpi:$(PWD)/src/Nbody
 VPATH +=$(PWD)/src/Radiation:$(PWD)/src/SM2013:$(PWD)/src/Thermal:$(PWD)/src/Tree
 VPATH +=$(PWD)/src/UnitTesting
-INCLUDE += -I$(PWD)/src/Headers
+# Use GANDALF_INCLUDE instead of INCLUDE to avoid namespace clash on DIaL
+GANDALF_INCLUDE += -I$(PWD)/src/Headers
 
 ifeq ($(strip $(CPP)),)
   CPP=$(CXX)
@@ -55,7 +56,15 @@ endif
 # -------------------------------------------------------------------------------------------------
 ifeq ($(COMPILER_MODE),FAST)
 GCCOPT   += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
-ICCOPT   += -O3 -fast -fPIC -fno-exceptions
+# -fast implies -static, which won't find, e.g., libm on DIaL.  And
+# -static will conflict with the default -qopenmp-link dynamic for
+# -OpenMP.
+# The DIaL login nodes are the same as the compute nodes, so -xHost is
+# OK when compiling on the login nodes.
+# Switch on symbols so that gdb backtrace will work.  Switch on traps
+# until seg faults are found.
+# for testing the MPI problem ICCOPT   += -O3 -g -ipo -no-prec-div -fp-model fast=2 -xHost -fPIC -fno-exceptions -fp-trap=common
+ICCOPT   += -O3 -ipo -no-prec-div -fp-model fast=2 -xHost -fPIC -fno-exceptions
 CLANGOPT += -O3 -ffast-math -fPIC
 else ifeq ($(COMPILER_MODE),DEBUG)
 GCCOPT   += -Og -g -pg -Wall -Wno-unknown-pragmas -Wno-reorder -fbounds-check -fPIC  -fno-rtti #-fprofile-arcs -ftest-coverage
@@ -63,8 +72,10 @@ ICCOPT   += -O3 -g -fPIC #-fprofile-arcs -ftest-coverage
 CLANGOPT += -O3 -g -pg -Wall
 else ifeq ($(COMPILER_MODE),STANDARD)
 GCCOPT   += -O3 -fPIC -fno-exceptions -fno-rtti
+ICCOPT   += -O3 -fPIC -fno-exceptions
 else ifeq ($(COMPILER_MODE),PROFILE)
 GCCOPT   += -O3 -fPIC -fno-exceptions -fno-rtti -pg
+ICCOPT   += -O3 -fPIC -fno-exceptions -pg
 endif
 
 ifeq ($(OPENMP),1)
@@ -73,23 +84,29 @@ ICCOPT   += -qopenmp
 CLANGOPT += -fopenmp -DOPENMP
 endif
 
+# Need to know if MPI is used before possibly adding ITAC
+ifeq ($(findstring mpi,$(CPP)),mpi)
+MPI = 1
+endif
+
 # Select the compiler
 # -------------------------------------------------------------------------------------------------
-ifeq ($(CPP),icpc)
+ifeq ($(findstring icpc,$(CPP)),icpc)
 OPT += $(ICCOPT)
 else ifeq ($(findstring clang,$(CPP)),clang)
 OPT += $(CLANGOPT)
 else ifeq ($(findstring g++,$(CPP)),g++)
 OPT += $(GCCOPT)
 else ifeq ($(CPP),mpic++)
-MPI = 1
+# mpic++ could be icpc, need to test for this somehow.
 OPT += $(GCCOPT)
 endif
 
-
-ifeq ($(MPI), 1)
+ifeq ($(MPI),1)
 CFLAGS += -DMPI_PARALLEL
-ifneq ($(CPP), mpic++)
+ifeq ($(CPP),mpiicpc)
+# libraries are added by mpiicpc
+else ifneq ($(CPP), mpic++)
 LIB += -lmpi -lmpi++
 endif
 endif
@@ -119,9 +136,9 @@ endif
 ifeq ($(FFTW),1)
 CFLAGS += -DFFTW_TURBULENCE
 ifeq ($(FFTW_INCLUDE),)
-INCLUDE += -I/sw/include
+GANDALF_INCLUDE += -I/sw/include
 else
-INCLUDE += $(FFTW_INCLUDE)
+GANDALF_INCLUDE += $(FFTW_INCLUDE)
 endif
 ifeq ($(FFTW_LIBRARY),)
 LIB += -lfftw3
@@ -136,14 +153,36 @@ endif
 ifeq ($(GSL),1)
 CFLAGS += -DGANDALF_GSL
 ifeq ($(GSL_INCLUDE),)
-INCLUDE += -I/usr/local/include
+GANDALF_INCLUDE += -I/usr/local/include
 else
-INCLUDE += $(GSL_INCLUDE)
+GANDALF_INCLUDE += $(GSL_INCLUDE)
 endif
 ifeq ($(GSL_LIBRARY),)
+ifeq ($(MKL),1)
+# Use MKL BLAS
+LIB += -L/usr/local/lib -lgsl
+else
 LIB += -L/usr/local/lib -lgsl -lgslcblas
+endif
 else
 LIB += $(GSL_LIBRARY)
+endif
+endif
+
+
+# MKL linkage
+#--------------------------------------------------------------------------------------------------
+ifeq ($(MKL),1)
+CFLAGS += -DGANDALF_MKL
+ifeq ($(MKL_INCLUDE),)
+# Do nothing
+else
+GANDALF_INCLUDE += $(MKL_INCLUDE)
+endif
+ifeq ($(MKL_LIBRARY),)
+# Do nothing
+else
+LIB += $(MKL_LIBRARY)
 endif
 endif
 
@@ -236,19 +275,19 @@ TEST_OBJ = TestScaling.o TestTree.o TestOctTree.o TestSinks.o
 
 
 %_wrap.cxx: %.i
-	swig -c++ -python -outdir $(PYFOLDER) $(CFLAGS) $(INCLUDE) $<
+	swig -c++ -python -outdir $(PYFOLDER) $(CFLAGS) $(GANDALF_INCLUDE) $<
 
 %_wrap.o: %_wrap.cxx
-	$(CPP) $(OPT) $(CFLAGS) -fexceptions -frtti -c $< -I$(PYLIB) -I$(PYLIB)/config -I$(NUMPY) $(INCLUDE)
+	$(CPP) $(OPT) $(CFLAGS) -fexceptions -frtti -c $< -I$(PYLIB) -I$(PYLIB)/config -I$(NUMPY) $(GANDALF_INCLUDE)
 
 %.o: %.cxx
-	$(CPP) $(CFLAGS) $(INCLUDE) -c $< $(OPT)
+	$(CPP) $(CFLAGS) $(GANDALF_INCLUDE) -c $< $(OPT)
 
 %.o: %.cpp
-	$(CPP) $(OPT) $(CFLAGS) -I$(GTEST)/include $(INCLUDE) -c $<
+	$(CPP) $(OPT) $(CFLAGS) -I$(GTEST)/include $(GANDALF_INCLUDE) -c $<
 
 %.o: %.c
-	$(CPP) $(OPT) $(CFLAGS) -I$(GTEST)/include $(INCLUDE) -c $<
+	$(CPP) $(OPT) $(CFLAGS) -I$(GTEST)/include $(GANDALF_INCLUDE) -c $<
 
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Darwin)
@@ -265,18 +304,18 @@ all : $(WRAP_OBJ) $(OBJ) Exception.o _SphSim.so executable
 #==================================================================================================
 
 executable : $(OBJ) gandalf.o Exception.o
-	$(CPP) $(CFLAGS) $(INCLUDE) -o gandalf $(OBJ) Exception.o gandalf.o $(OPT) $(LIB)
+	$(CPP) $(CFLAGS) $(GANDALF_INCLUDE) -o gandalf $(OBJ) Exception.o gandalf.o $(OPT) $(LIB)
 	cp gandalf ../bin/gandalf
 
 unittests : $(OBJ) $(TEST_OBJ) Exception.o
-	$(CPP) $(CFLAGS) $(INCLUDE) $(OPT) $(LIB) -o testgandalf $(OBJ) $(TEST_OBJ) Exception.o $(GTEST)/make/gtest_main.a
+	$(CPP) $(CFLAGS) $(GANDALF_INCLUDE) $(OPT) $(LIB) -o testgandalf $(OBJ) $(TEST_OBJ) Exception.o $(GTEST)/make/gtest_main.a
 	cp testgandalf ../bin/testgandalf
 
 _SphSim.so : $(WRAP_OBJ) $(OBJ) Exception.o Render.o
-	$(CPP) $(CFLAGS) $(INCLUDE) $(OPT) $(SHARED_OPTIONS) $(WRAP_OBJ) $(OBJ) Exception.o Render.o -o _SphSim.so $(LIB)
+	$(CPP) $(CFLAGS) $(GANDALF_INCLUDE) $(OPT) $(SHARED_OPTIONS) $(WRAP_OBJ) $(OBJ) Exception.o Render.o -o _SphSim.so $(LIB)
 
 Exception.o : Exception.cpp
-	$(CPP) $(OPT) $(INCLUDE) $(CFLAGS) -fexceptions -c $<
+	$(CPP) $(OPT) $(GANDALF_INCLUDE) $(CFLAGS) -fexceptions -c $<
 
 SphSimulation.o : SimulationIO.hpp SimulationIC.hpp SimAnalysis.hpp
 
@@ -293,6 +332,9 @@ clean ::
 	\rm -f *.pyc
 	\rm -f ../analysis/swig_generated/SphSim.py
 	\rm -f *.d
+	\rm -f *.optrpt
+	\rm -f *.dbg
+	\rm -f gandalf
 
 
 
@@ -302,7 +344,7 @@ get_dir_str = $(patsubst %/,%,$(dir $1))
 WHICH_GPP   = which g++
 
 ifeq ($(findstring g++,$(WHICH_GPP)),g++)
-BUILD_DEPS = @set -e; g++ -MM -MG $(INCLUDE) $< |\
+BUILD_DEPS = @set -e; g++ -MM -MG $(GANDALF_INCLUDE) $< |\
 	 sed 's;\($*\)\.o[ :]*;$(call get_dir_str, $@)/\1.o $@ : ;g' > $@
 else
 BUILD_DEPS = @echo "Warning: Cannot build dependencies for $(notdir $<)"
