@@ -8,8 +8,8 @@
 # Export everything.
 set -a
 
-# Not measuring
-unset MEASURE ITAC
+# Measuring, and measuring MPI
+MEASURE=true ITAC=true
 
 if [[ $MEASURE = true ]]; then
     if [[ $ITAC = true ]]; then
@@ -24,7 +24,7 @@ fi
 cd ~/gandalf/tests
 
 input=GI_disc_short_10
-sequence=102
+sequence=106
 rm -rf $input.$sequence
 mkdir $input.$sequence
 (

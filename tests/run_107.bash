@@ -8,6 +8,19 @@
 # Export everything.
 set -a
 
+# Not measuring
+unset MEASURE ITAC
+
+if [[ $MEASURE = true ]]; then
+    if [[ $ITAC = true ]]; then
+	gandalf_program=gandalf_measure_itac
+    else
+	gandalf_program=gandalf_measure
+    fi
+else
+    gandalf_program=gandalf_plain
+fi
+
 cd ~/gandalf/tests
 
 input=disc_short_2048
@@ -49,5 +62,5 @@ mkdir $input.$sequence
     
     # Use $input.$sequence as the results dir so that it is easy to
     # distinguish in the Recent Results list in the Amplifier GUI.
-    mpirun -n 8 -perhost 2 ~/gandalf/bin/gandalf ../DiRAC/$input.dat &> output
+    mpirun -n 8 -perhost 2 ~/gandalf/bin/$gandalf_program ../DiRAC/$input.dat &> output
 )

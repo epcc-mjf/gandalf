@@ -43,6 +43,19 @@
 #include "SimulationIC.hpp"
 #include "SimAnalysis.hpp"
 #include "SphSnapshot.h"
+#ifdef MEASURE
+// Advisor, VTune Amplifier
+#include <advisor-annotate.h>
+#include <ittnotify.h>
+#endif
+#ifdef MPI_PARALLEL
+#ifdef MEASURE
+#ifdef ITAC
+// ITAC
+#include <VT.h>
+#endif
+#endif
+#endif
 using namespace std;
 
 
@@ -407,7 +420,29 @@ void SimulationBase::Run
 
    CodeTiming::BlockTimer timer = timing->StartNewTimer("RUN");
 
+#ifdef MEASURE
+    ANNOTATE_DISABLE_COLLECTION_POP; // Advisor
+    __itt_resume(); // VTune
+#endif
+#ifdef MPI_PARALLEL
+#ifdef MEASURE
+#ifdef ITAC
+    VT_traceon(); // ITAC
+#endif
+#endif
+#endif
     MainLoop();
+#ifdef MEASURE
+    ANNOTATE_DISABLE_COLLECTION_PUSH; // Advisor
+    __itt_pause(); // VTune
+#endif
+#ifdef MPI_PARALLEL
+#ifdef MEASURE
+#ifdef ITAC
+    VT_traceoff(); // ITAC
+#endif
+#endif
+#endif
     Output();
 
     // Special condition to check if maximum wall-clock time has been reached.

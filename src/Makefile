@@ -89,6 +89,62 @@ ifeq ($(findstring mpi,$(CPP)),mpi)
 MPI = 1
 endif
 
+ifeq ($(MEASURE),true)
+ICCOPT += -D MEASURE
+
+# Reports
+#ICCOPT += -qopt-report=5 -qopt-report-phase=vec
+# -qopt-report-names=unmangled
+
+# Advisor
+# -vec os set by -O3
+# -simd is set by default
+# -qopenmp is set already if OpenMP is used
+ICCOPT += -g -O3 -I$(ADVISOR_DIR)/include
+# These two options are needed for VTune (and maybe Advisor?):
+# This is included with -g -O3:  ICCOPT += -debug inline-debug-info
+# This is include with -g:  -fno-omit-frame-pointer
+
+# VTune
+ICCOPT += -I$(VTUNE_AMPLIFIER_DIR)/include
+ICCOPT += -shared-intel
+# TBB is not used
+#ICCOPT +=-D TBB_USE_THREADING_TOOLS
+ICCOPT += -parallel-source-info=2
+# See if no inlining helps decipher Advisor output (at a cost!).  None
+# of these prevent inlining - why?
+# ICCOPT += -fno-inline -fno-inline-functions -ip-no-inlining
+# .a files should be found (after .so files but there is only a
+# libittnotify.a) but the VTune library directory is only in
+# LD_LIBRARY_PATH - would it be seen at the link step?
+LIB += -L$(VTUNE_AMPLIFIER_DIR)/lib64 -littnotify
+
+# ITAC
+ifeq ($(ITAC),true)
+ifeq ($(MPI),1)
+ifeq ($(CPP),mpiicpc)
+# ITAC
+ICCOPT += -D ITAC
+ICCOPT += -I$(VT_ROOT)/include
+ICCOPT += -tcollect -trace
+# No need to use mpirun -trace to trace, since the ITAC libraries are
+# statically linked.
+endif
+endif
+else
+ICCOPT += -U ITAC
+endif
+else
+# switch off everything
+ICCOPT += -U MEASURE -U ITAC
+# Or could do:
+# Switch off Advisor API calls with -D ANNOTATE_EXPAND_NULL
+# Switch off VTune Amplifier API calls with -D INTEL_NO_ITTNOTIFY_API
+# Switch off ITAC API calls by linking libVTnull instead of libVT
+#ICCOPT += -D ANNOTATE_EXPAND_NULL
+#ICCOPT += -D INTEL_NO_ITTNOTIFY_API
+endif
+
 # Select the compiler
 # -------------------------------------------------------------------------------------------------
 ifeq ($(findstring icpc,$(CPP)),icpc)

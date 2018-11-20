@@ -29,6 +29,19 @@
 #ifdef MPI_PARALLEL
 #include "mpi.h"
 #endif
+#ifdef MEASURE
+// Advisor, VTune Amplifier
+#include <advisor-annotate.h>
+#include <ittnotify.h>
+#endif
+#ifdef MPI_PARALLEL
+#ifdef MEASURE
+#ifdef ITAC
+// ITAC
+#include <VT.h>
+#endif
+#endif
+#endif
 using namespace std;
 
 
@@ -48,6 +61,11 @@ int main(int argc, char** argv)
   SimulationBase* sim;                               // Main simulation object
   ExceptionHandler::makeExceptionHandler(cplusplus); // Exception handler
 
+#ifdef MEASURE
+  ANNOTATE_DISABLE_COLLECTION_PUSH; // Advisor
+  __itt_pause(); // VTune
+#endif
+
 #ifdef MPI_PARALLEL
   // Initialise all MPI processes (if activated in Makefile)
   int mpi_thread_support;
@@ -57,6 +75,13 @@ int main(int argc, char** argv)
   required_mpi_thread_support = MPI_THREAD_FUNNELED;
 #endif
   MPI_Init_thread(&argc, &argv, required_mpi_thread_support, &mpi_thread_support);
+  
+#ifdef MEASURE
+#ifdef ITAC
+  VT_traceoff(); // ITAC
+#endif
+#endif
+
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &n_mpi_cpus);
 
