@@ -379,6 +379,7 @@ inline bool BoxOverlap
     return true;
   }
   else {
+    //MJF reorder these for better vectorisation?
     if (box1min[0] > box2max[0]) return false;
     if (box2min[0] > box1max[0]) return false;
     if (box1min[1] > box2max[1]) return false;

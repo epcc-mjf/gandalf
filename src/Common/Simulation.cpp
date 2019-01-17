@@ -712,7 +712,7 @@ void SimulationBase::SetupSimulation(void)
 
   // Generate initial conditions for simulation on root process (for MPI jobs)
   if (rank == 0) {
-    GenerateIC();
+    GenerateIC(); // MJF creates the particles
   }
 
 #ifdef MPI_PARALLEL

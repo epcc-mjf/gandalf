@@ -84,7 +84,7 @@ void MpiTree<ndim,ParticleType>::AllocateMemory(void)
   debug2("[MpiTree::AllocateMemory]");
 
   if (!allocated_tree) {
-    if (allocated_tree) DeallocateMemory();
+    if (allocated_tree) DeallocateMemory(); // MJF surely this is never true?
     Ntotmax = max(Ntotmax,Ntot);
 
     klevel = new int[lmax];
