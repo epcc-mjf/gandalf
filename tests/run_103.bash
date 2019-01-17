@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#PBS -l nodes=4:ppn=36
+#PBS -l nodes=1:ppn=36
 #PBS -l walltime=00:30:00
 #PBS -A dp047
 #PBS -q devel
@@ -35,7 +35,7 @@ mkdir $input.$sequence
     . ../../modules.bash
     
     # Intel's KMP_AFFINITY is not needed, used the OpenMP variables.
-    OMP_NUM_THREADS=18
+    OMP_NUM_THREADS=36
     OMP_PROC_BIND=true
     # No need for OMP_PLACES=cores on DIaL - Hyper-Threading is
     # switched off.
@@ -62,5 +62,20 @@ mkdir $input.$sequence
     
     # Use $input.$sequence as the results dir so that it is easy to
     # distinguish in the Recent Results list in the Amplifier GUI.
-    mpirun -n 8 -perhost 2 ~/gandalf/bin/$gandalf_program ../DiRAC/$input.dat &> output
+
+    mpirun -n 1 -gtool "amplxe-cl -collect hotspots -knob enable-user-tasks=true -knob analyze-openmp=true -data-limit=0 -result-dir /home/dc-fili1/gandalf/intel/amplxe/projects/gandalf/$input.$sequence.hotspots:0" /home/dc-fili1/gandalf/bin/gandalf_measure ../DiRAC/$input.dat &> output
+
+    mpirun -n 1 -gtool "amplxe-cl -collect advanced-hotspots -knob sampling-interval=10 -knob collection-detail=stack-call-and-tripcount -knob enable-user-tasks=true -knob analyze-openmp=true -data-limit=0 -result-dir /home/dc-fili1/gandalf/intel/amplxe/projects/gandalf/$input.$sequence.advanced-hotspots:0" /home/dc-fili1/gandalf/bin/gandalf_measure ../DiRAC/$input.dat &> output
+
+    mpirun -n 1 -gtool "amplxe-cl -collect concurrency -knob enable-user-tasks=true -knob enable-user-sync=true -knob analyze-openmp=true -data-limit=0 -result-dir /home/dc-fili1/gandalf/intel/amplxe/projects/gandalf/$input.$sequence.concurrency:0" /home/dc-fili1/gandalf/bin/gandalf_measure ../DiRAC/$input.dat &> output
+
+    mpirun -n 1 -gtool "amplxe-cl -collect locksandwaits -knob enable-user-tasks=true -knob enable-user-sync=true -data-limit=0 -result-dir /home/dc-fili1/gandalf/intel/amplxe/projects/gandalf/$input.$sequence.locksandwaits:0" /home/dc-fili1/gandalf/bin/gandalf_measure ../DiRAC/$input.dat &> output
+
+    mpirun -n 1 -gtool "amplxe-cl -collect memory-consumption -data-limit=0 -result-dir /home/dc-fili1/gandalf/intel/amplxe/projects/gandalf/$input.$sequence.memory-consumption:0" /home/dc-fili1/gandalf/bin/gandalf_measure ../DiRAC/$input.dat &> output
+    
+    mpirun -n 1 -gtool "amplxe-cl -collect hpc-performance -knob sampling-interval=10 -data-limit=0 -result-dir /home/dc-fili1/gandalf/intel/amplxe/projects/gandalf/$input.$sequence.hpc-performance:0" /home/dc-fili1/gandalf/bin/gandalf_measure ../DiRAC/$input.dat &> output
+    
+    mpirun -n 1 -gtool "amplxe-cl -collect general-exploration -knob sampling-interval=10 -knob collect-memory-bandwidth=true -knob analyze-openmp=true -knob enable-user-tasks=true -data-limit=0 -result-dir /home/dc-fili1/gandalf/intel/amplxe/projects/gandalf/$input.$sequence.general-exploration:0" /home/dc-fili1/gandalf/bin/gandalf_measure ../DiRAC/$input.dat &> output
+    
+    mpirun -n 1 -gtool "amplxe-cl -collect memory-access -knob sampling-interval=10 -knob analyze-mem-objects=true -knob analyze-openmp=true -data-limit=0 -result-dir /home/dc-fili1/gandalf/intel/amplxe/projects/gandalf/$input.$sequence.memory-access:0" /home/dc-fili1/gandalf/bin/gandalf_measure ../DiRAC/$input.dat &> output
 )

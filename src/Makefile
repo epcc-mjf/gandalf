@@ -64,18 +64,18 @@ GCCOPT   += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
 # Switch on symbols so that gdb backtrace will work.  Switch on traps
 # until seg faults are found.
 # for testing the MPI problem ICCOPT   += -O3 -g -ipo -no-prec-div -fp-model fast=2 -xHost -fPIC -fno-exceptions -fp-trap=common
-ICCOPT   += -O3 -ipo -no-prec-div -fp-model fast=2 -xHost -fPIC -fno-exceptions
+ICCOPT   += -O3 -ipo -no-prec-div -fp-model fast=2 -xHost -fPIC -fno-exceptions -fno-rtti
 CLANGOPT += -O3 -ffast-math -fPIC
 else ifeq ($(COMPILER_MODE),DEBUG)
 GCCOPT   += -Og -g -pg -Wall -Wno-unknown-pragmas -Wno-reorder -fbounds-check -fPIC  -fno-rtti #-fprofile-arcs -ftest-coverage
-ICCOPT   += -O3 -g -fPIC #-fprofile-arcs -ftest-coverage
+ICCOPT   += -O0 -g -pg -Wall -Wno-unknown-pragmas -Wno-reorder -xHost -fPIC -fno-rtti
 CLANGOPT += -O3 -g -pg -Wall
 else ifeq ($(COMPILER_MODE),STANDARD)
 GCCOPT   += -O3 -fPIC -fno-exceptions -fno-rtti
-ICCOPT   += -O3 -fPIC -fno-exceptions
+ICCOPT   += -O3 -fPIC -fno-exceptions -fno-rtti
 else ifeq ($(COMPILER_MODE),PROFILE)
 GCCOPT   += -O3 -fPIC -fno-exceptions -fno-rtti -pg
-ICCOPT   += -O3 -fPIC -fno-exceptions -pg
+ICCOPT   += -O3 -fPIC -fno-exceptions -fno-rtti -pg
 endif
 
 ifeq ($(OPENMP),1)
@@ -97,13 +97,12 @@ ICCOPT += -D MEASURE
 # -qopt-report-names=unmangled
 
 # Advisor
-# -vec os set by -O3
+# -vec is set by -O3
 # -simd is set by default
 # -qopenmp is set already if OpenMP is used
-ICCOPT += -g -O3 -I$(ADVISOR_DIR)/include
-# These two options are needed for VTune (and maybe Advisor?):
-# This is included with -g -O3:  ICCOPT += -debug inline-debug-info
-# This is include with -g:  -fno-omit-frame-pointer
+ICCOPT += -g -debug inline-debug-info -I$(ADVISOR_DIR)/include
+# This option is needed for VTune (and maybe Advisor?), but is
+# included with -g:  -fno-omit-frame-pointer
 
 # VTune
 ICCOPT += -I$(VTUNE_AMPLIFIER_DIR)/include

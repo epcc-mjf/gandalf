@@ -1,14 +1,15 @@
 #!/bin/bash
 
 #PBS -l nodes=1:ppn=36
-#PBS -l walltime=00:30:00
+#PBS -l walltime=01:00:00
 #PBS -A dp047
 #PBS -q devel
 
 # Export everything.
 set -a
 
-# Measuring
+# Measuring, not ITAC
+unset ITAC
 MEASURE=true
 
 if [[ $MEASURE = true ]]; then
@@ -23,8 +24,9 @@ fi
 
 cd ~/gandalf/tests
 
-input=GI_disc_short_10
-sequence=104
+# This isn't the problem with MPI/
+input=disc_short_10
+sequence=114
 rm -rf $input.$sequence
 mkdir $input.$sequence
 (
@@ -35,7 +37,7 @@ mkdir $input.$sequence
     . ../../modules.bash
     
     # Intel's KMP_AFFINITY is not needed, used the OpenMP variables.
-    OMP_NUM_THREADS=36
+    OMP_NUM_THREADS=1
     OMP_PROC_BIND=true
     # No need for OMP_PLACES=cores on DIaL - Hyper-Threading is
     # switched off.
@@ -62,5 +64,5 @@ mkdir $input.$sequence
     
     # Use $input.$sequence as the results dir so that it is easy to
     # distinguish in the Recent Results list in the Amplifier GUI.
-    mpirun -n 1 -gtool "amplxe-cl -collect hotspots -knob enable-user-tasks=true -knob analyze-openmp=true -data-limit=0 -result-dir $input.$sequence:0" /home/dc-fili1/gandalf/bin/gandalf_measure ../DiRAC/$input.dat &> output
+    mpirun -n 1 -gtool "amplxe-cl -collect general-exploration -knob sampling-interval=10 -knob collect-memory-bandwidth=true -knob analyze-openmp=true -knob enable-user-tasks=true -data-limit=0 -result-dir /home/dc-fili1/gandalf/intel/amplxe/projects/gandalf/$input.$sequence.general-exploration:0" /home/dc-fili1/gandalf/bin/openmp/gandalf_measure ../DiRAC/$input.dat &> output
 )

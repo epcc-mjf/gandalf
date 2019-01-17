@@ -10,25 +10,27 @@ if [[ $MEASURE = true ]]; then
     # Remove gcc so that libstdc++ gets loaded again later.
     module unload gcc
 
-    # Load Advisor before gcc to not pick up Advisor's old libstdc++.
-    # Probably Advisor's library directory should not be in
-    # LD_LIBRARY_PATH?
-    module load intel/advisor/2018
-    source $ADVISOR_XE_2018_DIR/advixe-vars.sh
-    export ADVISOR_DIR=$ADVISOR_2018_DIR
+#    # Load Advisor before gcc to not pick up Advisor's old libstdc++.
+#    # Probably Advisor's library directory should not be in
+#    # LD_LIBRARY_PATH?
+    module load intel/advisor/2019
+    source $ADVISOR_2019_DIR/advixe-vars.sh
+    export ADVISOR_DIR=$ADVISOR_2019_DIR
     
     # Probably don't need Inspector (more a debugging tool)
-    #module load intel/inspector/2018
+    #module load intel/inspector/2019
     
     # Load Amplifier before gcc to not pick up Amplifier's old
     # libstdc++ (just in case).
-    module load intel/vtune/2018
-    source $VTUNE_AMPLIFIER_XE_2018_DIR/amplxe-vars.sh
-    export VTUNE_AMPLIFIER_DIR=$VTUNE_AMPLIFIER_2018_DIR
+    module load intel/vtune/2019
+    source $VTUNE_AMPLIFIER_2019_DIR/amplxe-vars.sh
+    export VTUNE_AMPLIFIER_DIR=$VTUNE_AMPLIFIER_2019_DIR
     
     if [[ $ITAC = true ]]; then
-	# This sets VT_ROOT
-	source $intel_root/itac_2018/bin/itacvars.sh
+	# This sets VT_ROOT (and actually does all the itacvars.sh
+	# work as well, but call that anyway).
+	module load intel/itac/2019
+	source $VT_ROOT/bin/itacvars.sh
     fi
 fi
 
@@ -42,7 +44,7 @@ module load python/intel/2.7.14 fftw/intel/3.3.7 gsl/intel/2.4
 # measure+itac, they are found in
 # /cm/shared/apps/intel/compilers_and_libraries_2018.3.222.  These are
 # more-or-less the same, at least for the libraries.
-module load gcc/6.4 intel/compilers/18.0.3 intel/mpi/18.0.3
+module load gcc/6.4 intel/compilers/19.0.0 intel/mpi/19.0.0
 
 # Is this needed?  A hack to the Intel compilers script.
 source ${MKLROOT%/mkl}/bin/compilervars.sh intel64
