@@ -377,10 +377,12 @@ private:
 		// Do reflections on the left edge
 		if (_need_mirror[k][0]){
 		  for (int n=0; n < Nghost; n++){
+		    // MJF But n==0 => ngbs[n] is the first entry in the vector - how do I know here that is something special?
 			double rk = 2*_domain.min[k] - ngbs[n].r[k] ;
 			if (rk > _hbox.min[k]) {
               ngbs.push_back(ngbs[n+old_size]);
 			  reflect<ParticleType::NDIM>(ngbs.back(), k, _domain.min[k]) ;
+			  // MJF This sets ngbs[1] at the beginning?!
 			  ngbs[nc].flags.set(mirror_bound_flags[k][0]) ;
 			  nc++ ;
 			}

@@ -9,6 +9,7 @@
 #define NEIGHBOURMANAGER_H_
 
 
+#include <iostream> // MJF
 #include <iterator>
 #include <vector>
 using namespace std;
@@ -439,6 +440,7 @@ private:
       }
     }
 
+    // MJF This will not be true if there are reflections?
     assert(directlist.size() == neibdata.size() &&
            neib_idx.size()   == neibdata.size());
 
@@ -457,15 +459,18 @@ private:
           for (int k=0; k<ndim; k++) dr[k] = neibdata[Nneib].r[k] - rc[k];
           drsqd = DotProduct(dr, dr, ndim);
           if (drsqd < hrangemaxsqd || _scatter_overlap(neibdata[Nneib], drsqd, rmax, gather_only())) {
-            neiblist.push_back(Nneib);
+	    // MJF neiblist and directlist can interleave their indirect addressing into neibdata.  Not so nice for cache, nad perhaps makes cache blocking impossible?
+	    neiblist.push_back(Nneib);
             neib_idx.push_back(i);
             Nneib++;
           }
+	    // MJF neiblist and directlist can interleave their indirect addressing into neibdata.  Not so nice for cache, nad perhaps makes cache blocking impossible?
           else if (keep_direct && gravmask[neibdata[Nneib].ptype]) {
             directlist.push_back(Nneib);
             neib_idx.push_back(i);
             Nneib++;
           }
+	    // MJF This removes unused entries in neibdata.
           else if (Nmax > Nneib) {
             Nmax--;
             if (Nmax > Nneib) neibdata[Nneib] = neibdata[Nmax];
@@ -485,11 +490,13 @@ private:
 
         for (int k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rc[k];
         drsqd = DotProduct(dr,dr,ndim);
+	// MJF Surely neibdata[Nneib] has not yet been set in this loop?!
         if (drsqd < hrangemaxsqd || _scatter_overlap(neibdata[Nneib], drsqd, rmax, gather_only())) {
           neibdata.push_back(partdata[i]);
           neiblist.push_back(Nneib);
           neib_idx.push_back(i);
           Nneib++;
+	// MJF Surely neibdata[Nneib] has not yet been set in this loop?!
         } else if (keep_direct && gravmask[neibdata[Nneib].ptype]) {
           // Hydro candidates that fail the test get demoted to direct neighbours
           neibdata.push_back(partdata[i]);
@@ -502,6 +509,10 @@ private:
 
     _NCellDirectNeib = directlist.size();
     assert(neibdata.size() == (neiblist.size() + directlist.size()));
+    cout << "neibdata.size() = " << neibdata.size()
+	 << " neiblist.size() = " << neiblist.size()
+	 << " directlist.size() = " << directlist.size()
+	 << endl; // MJF
   }
 
 
@@ -510,6 +521,7 @@ private:
   /// \detail This function trims the neighbour lists for a given particle, determining whether
   ///         neighbours are needed for hydro or gravity. Periodic corrections are applied.
   //===============================================================================================
+  // MJF This could be cache blocked into L1 cache.  It does have indirection, so it will be difficult to split.
   template<class InParticleType, class do_pair_once, class gather_only>
   void TrimNeighbourLists(const InParticleType& p, const Typemask& hydromask, double hrangesqdi,
                           bool keep_grav)
@@ -541,6 +553,7 @@ private:
       // Compute relative position and distance quantities for pair
       for (int k=0; k<ndim; k++) draux[k] = neibpart.r[k] - rp[k];
       if (j < _NPeriodicGhosts)
+	// MJF This changes neibpart.r, which may then be re-used by another particle in the active cell.  Is that correct?  Or is there no change after the first correction?
         GhostFinder.ApplyPeriodicDistanceCorrection(neibpart.r, draux);
 
       const FLOAT drsqd = DotProduct(draux,draux,ndim);
@@ -571,6 +584,10 @@ private:
         }
       }
     }
+    cout << "directlist.size() = " << directlist.size()
+	 << " culled_neiblist.size() = " << culled_neiblist.size()
+	 << " smoothgravlist.size() = " << smoothgravlist.size()
+	 << endl; // MJF    
   }
 
   template<class InParticleType>

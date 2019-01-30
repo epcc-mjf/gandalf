@@ -264,6 +264,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   const ParticleType<ndim>* partdata = reinterpret_cast<const ParticleType<ndim>* >(part_gen) ;
 
   int cc = 0;                          // Cell counter
+  int ccc = 0;                         // MJF Cells actually traversed
   FLOAT gatherboxmin[ndim];            // Minimum gather neighbour box
   FLOAT gatherboxmax[ndim];            // Maximum gather neighbour box
   assert(partdata != NULL);
@@ -278,6 +279,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   //===============================================================================================
   while (cc < Ncell) {
 
+    ccc++; // MJF
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
     if (BoxOverlap(gatherboxmin,gatherboxmax,celldata[cc].bb.min,celldata[cc].bb.max)) {
@@ -307,6 +309,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
 
   };
   //===============================================================================================
+  cout << "Cells traversed = " << ccc << endl; // MJF
 }
 
 
