@@ -8,6 +8,8 @@
 #ifndef SRC_HEADERS_TREECELL_H_
 #define SRC_HEADERS_TREECELL_H_
 
+#include <type_traits>
+#define CACHE_LINE 0x40
 
 //=================================================================================================
 //  Struct TreeCellBase
@@ -15,7 +17,7 @@
 //=================================================================================================
 template <int ndim>
 struct TreeCellBase {
-  int copen;                           ///< i.d. of first child cell
+  alignas(CACHE_LINE) int copen;       ///< i.d. of first child cell
   int cnext;                           ///< i.d. of next cell if not opened
   int ifirst;                          ///< i.d. of first particle in cell
   int ilast;                           ///< i.d. of last particle in cell
