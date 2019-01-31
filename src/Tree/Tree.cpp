@@ -278,6 +278,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   //===============================================================================================
   while (cc < Ncell) {
 
+    assert(celldata[cc].N == celldata[cc].ilast - celldata[cc].ifirst + 1); // MJF
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
     if (BoxOverlap(gatherboxmin,gatherboxmax,celldata[cc].bb.min,celldata[cc].bb.max)) {
@@ -288,7 +289,8 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
       }
 
       // Ignore any empty cells
-      else if (celldata[cc].N == 0) {
+      // MJF equivalent to      else if (celldata[cc].N == 0) {
+      else if (celldata[cc].ilast - celldata[cc].ifirst + 1 == 0) {
         cc = celldata[cc].cnext;
       }
 
@@ -499,6 +501,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
   //===============================================================================================
   while (cc < Ncell) {
 
+    assert(celldata[cc].N == celldata[cc].ilast - celldata[cc].ifirst + 1); // MJF
     // Check if bounding boxes overlap with each other (for potential SPH neibs)
     //---------------------------------------------------------------------------------------------
     if (GhostFinder.PeriodicBoxOverlap(cell.bb, celldata[cc].hbox) ||
@@ -510,7 +513,8 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
       }
 
       // Ignore empty cells
-      else if (celldata[cc].N == 0) {
+      // MJF equivalent to      else if (celldata[cc].N == 0) {
+      else if (celldata[cc].ilast - celldata[cc].ifirst + 1 == 0) {
         cc = celldata[cc].cnext;
       }
 

@@ -15,20 +15,23 @@
 //=================================================================================================
 template <int ndim>
 struct TreeCellBase {
-  int cnext;                           ///< i.d. of next cell if not opened
   int copen;                           ///< i.d. of first child cell
+  int cnext;                           ///< i.d. of next cell if not opened
+  int ifirst;                          ///< i.d. of first particle in cell
+  int ilast;                           ///< i.d. of last particle in cell
+  Box<ndim> bb ;                       ///< Bounding box
+  Box<ndim> hbox;                      ///< Bounding box for smoothing volume
+  // MJF 1 cache line for FLOAT=double, ndim=3; but not if int becomes long for larger numbers of cells.
+  // MJF But KDTreeCell adds int c1,c2 - where do they go?  This may require cache alignment as well.
+  // MJF This also depends (in code that uses this) on N=ilast-ifirst+1.
+  int N;                               ///< No. of particles in cell
   int id;                              ///< Cell id
   int parent;                          ///< Id of the cell's parent
   int level;                           ///< Level of cell on tree
-  int ifirst;                          ///< i.d. of first particle in cell
-  int ilast;                           ///< i.d. of last particle in cell
-  int N;                               ///< No. of particles in cell
   int Nactive;                         ///< No. of active particles in cell
   float maxsound;                      ///< Maximum sound speed inside the cell
   FLOAT cdistsqd;                      ///< Minimum distance to use COM values
   FLOAT mac;                           ///< Multipole-opening criterion value
-  Box<ndim> bb ;                       ///< Bounding box
-  Box<ndim> hbox;                      ///< Bounding box for smoothing volume
   Box<ndim> vbox ;                     ///< Velocity space bounding box
   FLOAT r[ndim];                       ///< Position of cell COM
   FLOAT m;                             ///< Mass contained in cell
