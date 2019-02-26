@@ -28,8 +28,10 @@ PRECISION          = DOUBLE
 # - otherwise the analyses are confusing.  May need to switch off
 # inlining as well for Advisor to see where things really are, but
 # that will certainly prevent vectorisation.
-OPENMP             = 0
-#OPENMP             = 1
+#
+# Actually, need to switch on OpenMP to get the SIMD directives.
+#OPENMP             = 0
+OPENMP             = 1
 PYSNAP_PRECISION   = DOUBLE
 OUTPUT_LEVEL       = 1
 DEBUG_LEVEL        = 0

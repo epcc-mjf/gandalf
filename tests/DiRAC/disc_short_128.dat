@@ -23,8 +23,8 @@ Regular snapshot output frequency           : dt_snap = 100.0
 Time for first snapshot                     : tsnapfirst = 100.0
 Screen output frequency (in no. of steps)   : noutputstep = 10
 Output file format                          : out_file_form = su
-Maximum number of steps                     : Nstepsmax = 2048
-Maximum wall clock time                     : tmax_wallclock = 86400
+Maximum number of steps                     : Nstepsmax = 128
+Maximum wall clock time                     : tmax_wallclock = 10800
 
 
 #------------------------
