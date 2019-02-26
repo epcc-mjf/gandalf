@@ -54,6 +54,9 @@ endif
 
 # Compiler mode flags
 # -------------------------------------------------------------------------------------------------
+# For Intel, look the assebly code with
+# -Fa -fsource-asm -fverbose-asm -qopt-report-embed -masm=intel
+
 ifeq ($(COMPILER_MODE),FAST)
 GCCOPT   += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
 # -fast implies -static, which won't find, e.g., libm on DIaL.  And

@@ -39,5 +39,11 @@ gandalf
 bin/
 # Result directories
 tests/*disc*.[0-9][0-9][0-9]
+tests/*disc*.[0-9][0-9][0-9][a-z]
+tests/*disc*.[0-9][0-9][0-9]
 # DiAL job output
 *.[eo][0-9][0-9][0-9][0-9][0-9]
+# Emacs files
+BROWSE
+TAGS
+

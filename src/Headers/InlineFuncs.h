@@ -365,18 +365,18 @@ inline FLOAT clamp (FLOAT value, FLOAT min, FLOAT max)
 /// Check if two bounding boxes overlap.  If yes, then return true.
 //=================================================================================================
 template<int ndim> bool BoxOverlap
- (const Box<ndim> box1,
-  const Box<ndim> box2)
+ (const Box<ndim>& box1,
+  const Box<ndim>& box2)
 {
   bool no_overlap = false;
 #pragma omp simd reduction(||:no_overlap)
   for (int k=0; k<ndim; k++) {
-    no_overlap = box1.min[k] > box2.max[k];
+    no_overlap = no_overlap || box1.min[k] > box2.max[k];
   }
   if (no_overlap) return false;
 #pragma omp simd reduction(||:no_overlap)
   for (int k=0; k<ndim; k++) {
-    no_overlap = box2.min[k] > box1.max[k];
+    no_overlap = no_overlap || box2.min[k] > box1.max[k];
   }
   if (no_overlap) return false;
   return true;

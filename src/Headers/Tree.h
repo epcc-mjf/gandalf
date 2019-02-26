@@ -268,10 +268,9 @@ protected:
   virtual int MaxNumCells() const
   { return gtot ; }
 
-  bool BoxOverlap(const Box<ndim> box1, const Box<ndim> box2)
+  bool BoxOverlap(const Box<ndim>& box1, const Box<ndim>& box2)
   {
-    using ::BoxOverlap ;
-    return BoxOverlap(box1, box2) ;
+    return ::BoxOverlap(box1, box2) ;
   }
 
   bool BoxOverlap_old(const FLOAT box1min[ndim], const FLOAT box1max[ndim],
