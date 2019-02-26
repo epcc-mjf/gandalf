@@ -203,7 +203,7 @@ public:
 	bool PeriodicBoxOverlap(const Box<ndim>& box1, const Box<ndim>& box2) const
 	{
 	  if (!_any_periodic)
-	    return BoxOverlap(ndim, box1.min, box1.max, box2.min, box2.max) ;
+	    return BoxOverlap(box1, box2) ;
 	  else {
 	    // Find the smallest possible distance between box centres
         FLOAT dr[ndim];
@@ -218,10 +218,10 @@ public:
 	        periodic_box.min[k] = box2.min[k] + dr_corr[k];
 	        periodic_box.max[k] = box2.max[k] + dr_corr[k];
 	      }
-	      return BoxOverlap(ndim, box1.min, box1.max, periodic_box.min, periodic_box.max) ;
+	      return BoxOverlap(box1, periodic_box) ;
 	    }
 	    else {
-	      return BoxOverlap(ndim, box1.min, box1.max, box2.min, box2.max) ;
+	      return BoxOverlap(box1, box2) ;
 	    }
 	  }
 	}

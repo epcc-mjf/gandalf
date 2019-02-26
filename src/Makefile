@@ -93,8 +93,7 @@ ifeq ($(MEASURE),true)
 ICCOPT += -D MEASURE
 
 # Reports
-#ICCOPT += -qopt-report=5 -qopt-report-phase=vec
-# -qopt-report-names=unmangled
+ICCOPT += -qopt-report=5 -qopt-report-phase=vec # -qopt-report-names=unmangled
 
 # Advisor
 # -vec is set by -O3

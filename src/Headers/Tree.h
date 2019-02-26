@@ -268,11 +268,17 @@ protected:
   virtual int MaxNumCells() const
   { return gtot ; }
 
-  bool BoxOverlap(const FLOAT box1min[ndim], const FLOAT box1max[ndim],
-		          const FLOAT box2min[ndim], const FLOAT box2max[ndim])
+  bool BoxOverlap(const Box<ndim> box1, const Box<ndim> box2)
   {
     using ::BoxOverlap ;
-    return BoxOverlap(ndim, box1min, box1max, box2min, box2max) ;
+    return BoxOverlap(box1, box2) ;
+  }
+
+  bool BoxOverlap_old(const FLOAT box1min[ndim], const FLOAT box1max[ndim],
+		          const FLOAT box2min[ndim], const FLOAT box2max[ndim])
+  {
+    using ::BoxOverlap_old ;
+    return BoxOverlap_old(ndim, box1min, box1max, box2min, box2max) ;
   }
 
   MAC_Type GetMacType() const {

@@ -27,6 +27,11 @@
 #define _DOMAIN_BOX_H_
 
 
+#include <type_traits>
+#define CACHE_LINE 0x40
+#define AVX512_LENGTH 0x40
+#define AVX_LENGTH 0x20
+
 #include <string>
 #include <vector>
 #include <algorithm>
@@ -47,8 +52,11 @@ enum boundaryEnum{openBoundary, periodicBoundary, mirrorBoundary, wallBoundary, 
 //=================================================================================================
 template <int ndim>
 struct Box {
-  FLOAT min[ndim];                     ///< Minimum bounding box extent
-  FLOAT max[ndim];                     ///< Maximum bounding box extent
+
+  // MJF Or should the cache alignment be done in the structures that use Box?
+  alignas(CACHE_LINE) FLOAT min[ndim];                     ///< Minimum bounding box extent
+  alignas(AVX_LENGTH) FLOAT max[ndim];                     ///< Maximum bounding box extent
+  // MJF 1 cache line
 
   Box () {
     for (int k=0; k<ndim; k++) {

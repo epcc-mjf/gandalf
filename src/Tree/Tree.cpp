@@ -264,24 +264,22 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   const ParticleType<ndim>* partdata = reinterpret_cast<const ParticleType<ndim>* >(part_gen) ;
 
   int cc = 0;                          // Cell counter
-  FLOAT gatherboxmin[ndim];            // Minimum gather neighbour box
-  FLOAT gatherboxmax[ndim];            // Maximum gather neighbour box
+  Box<ndim> gatherbox;            // Gather neighbour box
   assert(partdata != NULL);
 
 
   FLOAT rc[ndim];
   cell.ComputeCellCentre(rc);
-  for (int k=0; k<ndim; k++) gatherboxmin[k] = cell.bb.min[k] - kernrange*hmax;
-  for (int k=0; k<ndim; k++) gatherboxmax[k] = cell.bb.max[k] + kernrange*hmax;
+  for (int k=0; k<ndim; k++) gatherbox.min[k] = cell.bb.min[k] - kernrange*hmax;
+  for (int k=0; k<ndim; k++) gatherbox.max[k] = cell.bb.max[k] + kernrange*hmax;
 
 
   //===============================================================================================
   while (cc < Ncell) {
 
-    assert(celldata[cc].N == celldata[cc].ilast - celldata[cc].ifirst + 1); // MJF
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
-    if (BoxOverlap(gatherboxmin,gatherboxmax,celldata[cc].bb.min,celldata[cc].bb.max)) {
+    if (BoxOverlap(gatherbox,celldata[cc].bb)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (celldata[cc].copen != -1) {
@@ -289,8 +287,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
       }
 
       // Ignore any empty cells
-      // MJF equivalent to      else if (celldata[cc].N == 0) {
-      else if (celldata[cc].ilast - celldata[cc].ifirst + 1 == 0) {
+      else if (celldata[cc].N == 0) {
         cc = celldata[cc].cnext;
       }
 
@@ -363,8 +360,8 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
-    if (BoxOverlap(cell.bb.min, cell.bb.max, celldata[cc].hbox.min, celldata[cc].hbox.max) ||
-        BoxOverlap(cell.hbox.min, cell.hbox.max, celldata[cc].bb.min, celldata[cc].bb.max)) {
+    if (BoxOverlap(cell.bb, celldata[cc].hbox) ||
+        BoxOverlap(cell.hbox, celldata[cc].bb)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (celldata[cc].copen != -1) {
@@ -445,8 +442,8 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
-    if (BoxOverlap(cell.bb.min, cell.bb.max, celldata[cc].hbox.min, celldata[cc].hbox.max) ||
-        BoxOverlap(cell.hbox.min, cell.hbox.max, celldata[cc].bb.min, celldata[cc].bb.max)) {
+    if (BoxOverlap(cell.bb, celldata[cc].hbox) ||
+        BoxOverlap(cell.hbox, celldata[cc].bb)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (celldata[cc].copen != -1) {
@@ -501,7 +498,6 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
   //===============================================================================================
   while (cc < Ncell) {
 
-    assert(celldata[cc].N == celldata[cc].ilast - celldata[cc].ifirst + 1); // MJF
     // Check if bounding boxes overlap with each other (for potential SPH neibs)
     //---------------------------------------------------------------------------------------------
     if (GhostFinder.PeriodicBoxOverlap(cell.bb, celldata[cc].hbox) ||
@@ -513,8 +509,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
       }
 
       // Ignore empty cells
-      // MJF equivalent to      else if (celldata[cc].N == 0) {
-      else if (celldata[cc].ilast - celldata[cc].ifirst + 1 == 0) {
+      else if (celldata[cc].N == 0) {
         cc = celldata[cc].cnext;
       }
 
@@ -961,7 +956,11 @@ template <int ndim, template<int> class ParticleType, template<int> class TreeCe
 int Tree<ndim,ParticleType,TreeCell>::FindLeafCell
  (const FLOAT rp[ndim])
 {
-  int cc = 0;                          // Cell counter (start at root cell)
+  int cc = 0;                // Cell counter (start at root cell)
+  Box<ndim> rbox;            // Single point 'box'
+
+  for (int k=0; k<ndim; k++) rbox.min[k] = rp[k];
+  for (int k=0; k<ndim; k++) rbox.max[k] = rp[k];
 
 
   //===============================================================================================
@@ -969,7 +968,7 @@ int Tree<ndim,ParticleType,TreeCell>::FindLeafCell
 
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
-    if (BoxOverlap(rp, rp, celldata[cc].bb.min, celldata[cc].bb.max)) {
+    if (BoxOverlap(rbox, celldata[cc].bb)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (celldata[cc].copen != -1) {
@@ -1519,7 +1518,7 @@ const Particle<ndim> *part_gen)                ///< [in] List of particle data
 
     // If maximum cell scatter box overlaps MPI domain, open cell
     //-------------------------------------------------------------------------------------------
-    if (BoxOverlap(cellptr->bb.min, cellptr->bb.max, nodebox.min, nodebox.max)) {
+    if (BoxOverlap(cellptr->bb, nodebox)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (cellptr->copen != -1) {
@@ -1566,9 +1565,7 @@ int Tree<ndim,ParticleType,TreeCell>::FindBoxGhostParticles
  const Box<ndim> &box,
  vector<int> &export_list)
  {
-  FLOAT scattermin[ndim];              // Minimum 'scatter' box size due to particle motion
-  FLOAT scattermax[ndim];              // Maximum 'scatter' box size due to particle motion
-
+   Box<ndim> scatterbox;              // 'scatter' box due to particle motion
 
 
   // Start from root-cell of tree and walk all cells
@@ -1580,14 +1577,14 @@ int Tree<ndim,ParticleType,TreeCell>::FindBoxGhostParticles
 
     // Construct maximum cell bounding box depending on particle velocities
     for (int k=0; k<ndim; k++) {
-      scattermin[k] = cellptr->bb.min[k] + cellptr->vbox.min[k]*tghost - ghost_range*cellptr->hmax;
-      scattermax[k] = cellptr->bb.max[k] + cellptr->vbox.max[k]*tghost + ghost_range*cellptr->hmax;
+      scatterbox.min[k] = cellptr->bb.min[k] + cellptr->vbox.min[k]*tghost - ghost_range*cellptr->hmax;
+      scatterbox.max[k] = cellptr->bb.max[k] + cellptr->vbox.max[k]*tghost + ghost_range*cellptr->hmax;
     }
 
 
     // If maximum cell scatter box overlaps MPI domain, open cell
     //---------------------------------------------------------------------------------------------
-    if (BoxOverlap(scattermin, scattermax, box.min, box.max)) {
+    if (BoxOverlap(scatterbox, box)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (cellptr->copen != -1) {
