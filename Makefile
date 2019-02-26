@@ -34,7 +34,7 @@ PRECISION          = DOUBLE
 OPENMP             = 1
 PYSNAP_PRECISION   = DOUBLE
 OUTPUT_LEVEL       = 1
-DEBUG_LEVEL        = 2
+DEBUG_LEVEL        = 0
 BUILD_DEPENDENCIES = 1
 
 # FFTW libary flags and paths.  If paths are empty, tries standard
