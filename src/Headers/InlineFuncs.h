@@ -368,7 +368,7 @@ template<int ndim> bool BoxOverlap
  (const Box<ndim> box1,
   const Box<ndim> box2)
 {
-  alignas(AVX_LENGTH) bool no_overlap;
+  bool no_overlap = false;
 #pragma omp simd reduction(||:no_overlap)
   for (int k=0; k<ndim; k++) {
     no_overlap = box1.min[k] > box2.max[k];
@@ -388,7 +388,6 @@ template<int ndim> bool BoxOverlap
 //  BoxOverlap_old
 /// Check if two bounding boxes overlap.  If yes, then return true.
 //=================================================================================================
-// MJF make this a template on ndim?
 inline bool BoxOverlap_old
  (const int ndim,
   const FLOAT *box1min,                ///< Minimum extent of box 1
@@ -396,42 +395,28 @@ inline bool BoxOverlap_old
   const FLOAT *box2min,                ///< Minimum extent of box 2
   const FLOAT *box2max)                ///< Maximum extent of box 2
 {
-  bool no_overlap;
-#pragma omp simd early_exit
-  for (int k=0; k<ndim; k++) {
-    if (no_overlap = box1min[k] > box2max[k]) break;
-  }
-  if (no_overlap) return false;
-#pragma omp simd early_exit
-  for (int k=0; k<ndim; k++) {
-    if (no_overlap = box2min[k] > box1max[k]) break;
-  }
-  if (no_overlap) return false;
-  return true;
-
-  /*
-  if (ndim == 3) {
+  if (ndim == 1) {
     if (box1min[0] > box2max[0]) return false;
-    if (box1min[1] > box2max[1]) return false;
-    if (box1min[2] > box2max[2]) return false;
     if (box2min[0] > box1max[0]) return false;
-    if (box2min[1] > box1max[1]) return false;
-    if (box2min[2] > box1max[2]) return false;
     return true;
   }
   else if (ndim == 2) {
     if (box1min[0] > box2max[0]) return false;
-    if (box1min[1] > box2max[1]) return false;
     if (box2min[0] > box1max[0]) return false;
+    if (box1min[1] > box2max[1]) return false;
     if (box2min[1] > box1max[1]) return false;
     return true;
   }
-  else if (ndim == 1) {
+  else {
+    //MJF reorder these for better vectorisation?
     if (box1min[0] > box2max[0]) return false;
     if (box2min[0] > box1max[0]) return false;
+    if (box1min[1] > box2max[1]) return false;
+    if (box2min[1] > box1max[1]) return false;
+    if (box1min[2] > box2max[2]) return false;
+    if (box2min[2] > box1max[2]) return false;
     return true;
   }
-  */
 }
 
 
