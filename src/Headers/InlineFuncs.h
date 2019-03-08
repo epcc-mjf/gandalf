@@ -31,6 +31,10 @@
 #define AVX512_LENGTH 0x40
 #define AVX_LENGTH 0x20
 
+#ifdef INTEL_INTRINSICS
+#include <immintrin.h>
+#endif
+
 #include <string.h>
 #include <assert.h>
 #include <string>
@@ -364,7 +368,71 @@ inline FLOAT clamp (FLOAT value, FLOAT min, FLOAT max)
 //  BoxOverlap
 /// Check if two bounding boxes overlap.  If yes, then return true.
 //=================================================================================================
+#ifdef INTEL_INTRINSICS
 template<int ndim> bool BoxOverlap
+ (const Box<ndim>& box1,
+  const Box<ndim>& box2)
+{
+  __mmask8 mask = (1<<ndim)-1; // 0...0 followed by ndim 1s
+
+  // MJF This is all only correct for FLOAT=double.
+  // if ( any(box2.min > box2.max) || any(box2.min > box1.max) ) then false else true
+  if(_mm256_mask_cmp_pd_mask(mask, *(__m256d*)box1.min, *(__m256d*)box2.max, _CMP_GT_OS)
+     || _mm256_mask_cmp_pd_mask(mask, *(__m256d*)box2.min, *(__m256d*)box1.max, _CMP_GT_OS))
+    return false;
+    // C++20 [[likely]] return false;
+  else
+    return true;
+}
+#else // ! defined INTEL_INTRINSICS
+template<int ndim> bool BoxOverlap
+ (const Box<ndim>& box1,
+  const Box<ndim>& box2)
+/*
+{
+  for (int k=0; k<ndim; k++) {
+    if (box1.min[k] > box2.max[k]) return false;
+  }
+  for (int k=0; k<ndim; k++) {
+    if (box2.min[k] > box1.max[k]) return false;
+  }
+  return true;
+}
+*/
+{
+  if (ndim == 1) {
+    if (box1.min[0] > box2.max[0]) return false;
+    if (box2.min[0] > box1.max[0]) return false;
+    return true;
+  }
+  else if (ndim == 2) {
+    if (box1.min[0] > box2.max[0]) return false;
+    if (box2.min[0] > box1.max[0]) return false;
+    if (box1.min[1] > box2.max[1]) return false;
+    if (box2.min[1] > box1.max[1]) return false;
+    return true;
+  }
+  else {
+    if (box1.min[0] > box2.max[0]) return false;
+    if (box2.min[0] > box1.max[0]) return false;
+    if (box1.min[1] > box2.max[1]) return false;
+    if (box2.min[1] > box1.max[1]) return false;
+    if (box1.min[2] > box2.max[2]) return false;
+    if (box2.min[2] > box1.max[2]) return false;
+    return true;
+  }
+}
+#endif // INTEL_INTRINSICS
+
+
+
+/*
+//=================================================================================================
+//  BoxOverlap_openmp
+/// Check if two bounding boxes overlap.  If yes, then return true.
+//  Intel 19 (and earlier) does not compile this properly with AVX-512
+//=================================================================================================
+template<int ndim> bool BoxOverlap_openmp
  (const Box<ndim>& box1,
   const Box<ndim>& box2)
 {
@@ -384,6 +452,7 @@ template<int ndim> bool BoxOverlap
 
 
 
+*/
 //=================================================================================================
 //  BoxOverlap_old
 /// Check if two bounding boxes overlap.  If yes, then return true.

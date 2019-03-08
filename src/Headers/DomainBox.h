@@ -54,8 +54,14 @@ template <int ndim>
 struct Box {
 
   // MJF Or should the cache alignment be done in the structures that use Box?
-  alignas(CACHE_LINE) FLOAT min[ndim];                     ///< Minimum bounding box extent
-  alignas(AVX_LENGTH) FLOAT max[ndim];                     ///< Maximum bounding box extent
+  // MJF This is all only correct for FLOAT=double.
+  //  alignas(CACHE_LINE) FLOAT min[ndim];                     ///< Minimum bounding box extent
+  //  alignas(AVX_LENGTH) FLOAT max[ndim];                     ///< Maximum bounding box extent
+  //  alignas(CACHE_LINE) FLOAT min[4];                     ///< Minimum bounding box extent
+  //  alignas(AVX_LENGTH) FLOAT max[4];                     ///< Maximum bounding box extent
+  static_assert(ndim <= AVX_LENGTH/sizeof(FLOAT));
+  alignas(CACHE_LINE) FLOAT min[AVX_LENGTH/sizeof(FLOAT)];                     ///< Minimum bounding box extent
+  alignas(AVX_LENGTH) FLOAT max[AVX_LENGTH/sizeof(FLOAT)];                     ///< Maximum bounding box extent
   // MJF 1 cache line
 
   Box () {

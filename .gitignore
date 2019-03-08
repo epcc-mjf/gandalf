@@ -35,6 +35,7 @@ gandalf
 *.log
 # Build reports
 *.optrpt
+*.s
 # Installation
 bin/
 # Result directories
@@ -46,4 +47,3 @@ tests/*disc*.[0-9][0-9][0-9]
 # Emacs files
 BROWSE
 TAGS
-

@@ -67,7 +67,10 @@ GCCOPT   += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
 # Switch on symbols so that gdb backtrace will work.  Switch on traps
 # until seg faults are found.
 # for testing the MPI problem ICCOPT   += -O3 -g -ipo -no-prec-div -fp-model fast=2 -xHost -fPIC -fno-exceptions -fp-trap=common
-ICCOPT   += -O3 -ipo -no-prec-div -fp-model fast=2 -xHost -fPIC -fno-exceptions -fno-rtti
+# Try without ipo, and show the assembly code; then it is clear what
+# the vectorisation is.
+#ICCOPT   += -O3 -ipo -no-prec-div -fp-model fast=2 -xHost -fPIC -fno-exceptions -fno-rtti
+ICCOPT   += -O3 -no-prec-div -fp-model fast=2 -xHost -fPIC -fno-exceptions -fno-rtti -Fa -masm=intel -fsource-asm -qopt-report-embed
 CLANGOPT += -O3 -ffast-math -fPIC
 else ifeq ($(COMPILER_MODE),DEBUG)
 GCCOPT   += -Og -g -pg -Wall -Wno-unknown-pragmas -Wno-reorder -fbounds-check -fPIC  -fno-rtti #-fprofile-arcs -ftest-coverage
@@ -85,6 +88,12 @@ ifeq ($(OPENMP),1)
 GCCOPT   += -fopenmp
 ICCOPT   += -qopenmp
 CLANGOPT += -fopenmp -DOPENMP
+else
+ICCOPT   += -Wno-unknown-pragmas
+endif
+
+ifeq ($(INTEL_INTRINSICS),1)
+ICCOPT   += -DINTEL_INTRINSICS
 endif
 
 # Need to know if MPI is used before possibly adding ITAC
@@ -390,6 +399,7 @@ clean ::
 	\rm -f ../analysis/swig_generated/SphSim.py
 	\rm -f *.d
 	\rm -f *.optrpt
+	\rm -f *.s
 	\rm -f *.dbg
 	\rm -f gandalf
 

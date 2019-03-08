@@ -42,7 +42,9 @@ struct TreeCellBase {
   // MJF 1 cache line
   Box<ndim> vbox ;                     ///< Velocity space bounding box
   // MJF 1 cache line
-  alignas(AVX_LENGTH) FLOAT r[ndim];   ///< Position of cell COM
+  //alignas(AVX_LENGTH) FLOAT r[ndim];   ///< Position of cell COM
+  static_assert(ndim <= AVX_LENGTH/sizeof(FLOAT));
+  alignas(AVX_LENGTH) FLOAT r[AVX_LENGTH/sizeof(FLOAT)];   ///< Position of cell COM
   FLOAT m;                             ///< Mass contained in cell
   FLOAT rmax;                          ///< Radius of bounding sphere
   FLOAT hmax;                          ///< Maximum smoothing length inside cell
