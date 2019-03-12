@@ -20,6 +20,7 @@
 template <int ndim>
 struct TreeCellBase {
   // MJF All this may not be OK if int becomes long for larger numbers of cells.
+  // MJF This is all only correct for FLOAT=double.
   alignas(CACHE_LINE) int cnext;       ///< i.d. of next cell if not opened
   int copen;                           ///< i.d. of first child cell
   int id;                              ///< Cell id

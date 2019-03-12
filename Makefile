@@ -36,7 +36,7 @@ PYSNAP_PRECISION   = DOUBLE
 OUTPUT_LEVEL       = 1
 DEBUG_LEVEL        = 0
 BUILD_DEPENDENCIES = 1
-INTEL_INTRINSICS   = 1
+INTEL_INTRINSICS   = 0
 
 # FFTW libary flags and paths.  If paths are empty, tries standard
 # default linux paths.  On DIaL the paths are set in CPATH and LIBRARY_PATH.
