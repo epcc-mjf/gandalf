@@ -55,7 +55,7 @@ endif
 # Compiler mode flags
 # -------------------------------------------------------------------------------------------------
 # For Intel, look at the assembly code with
-# -Fa -fsource-asm -fverbose-asm -qopt-report-embed -masm=intel
+# -Fa -fsource-asm -qopt-report-embed -masm=intel
 
 ifeq ($(COMPILER_MODE),FAST)
 GCCOPT   += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti

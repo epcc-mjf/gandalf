@@ -374,13 +374,14 @@ template<int ndim> bool BoxOverlap
   const Box<ndim>& box2)
 {
   __mmask8 mask = (1<<ndim)-1; // 0...0 followed by ndim 1s
+  auto m256d = [](const FLOAT * x){return *reinterpret_cast<const __m256d*>(x);};
 
   // MJF This is all only correct for FLOAT=double.
   // if ( any(box2.min > box2.max) || any(box2.min > box1.max) ) then false else true
-  if(_mm256_mask_cmp_pd_mask(mask, *(__m256d*)box1.min, *(__m256d*)box2.max, _CMP_GT_OS)
-     || _mm256_mask_cmp_pd_mask(mask, *(__m256d*)box2.min, *(__m256d*)box1.max, _CMP_GT_OS))
+  if (_mm256_mask_cmp_pd_mask(mask, m256d(box1.min), m256d(box2.max), _CMP_GT_OS)
+      || _mm256_mask_cmp_pd_mask(mask, m256d(box2.min), m256d(box1.max), _CMP_GT_OS))
     return false;
-    // C++20 [[likely]] return false;
+  // C++20 [[likely]] return false;
   else
     return true;
 }
