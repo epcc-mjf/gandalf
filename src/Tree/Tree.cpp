@@ -21,6 +21,15 @@
 //=================================================================================================
 
 
+#include <type_traits>
+#define CACHE_LINE 0x40
+#define AVX512_LENGTH 0x40
+#define AVX_LENGTH 0x20
+
+#ifdef INTEL_INTRINSICS
+#include <immintrin.h>
+#endif
+
 #include <cstdlib>
 #include <cassert>
 #include <iostream>
@@ -273,13 +282,21 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   for (int k=0; k<ndim; k++) gatherbox.min[k] = cell.bb.min[k] - kernrange*hmax;
   for (int k=0; k<ndim; k++) gatherbox.max[k] = cell.bb.max[k] + kernrange*hmax;
 
+  __mmask8 mask = (1<<ndim)-1; // 0...0 followed by ndim 1s
+  auto m256d = [](const FLOAT * x){return *reinterpret_cast<const __m256d*>(x);};
+  // register is an unused and reserved keyword since C++17,
+  // but Gnu and Intel interpret this as the Gnu extension.
+  register __m256d gmin asm ("ymm14") = _mm256_maskz_load_pd(mask, gatherbox.min);
+  register __m256d gmax asm ("ymm15") = _mm256_maskz_load_pd(mask, gatherbox.max);
 
   //===============================================================================================
   while (cc < Ncell) {
-
+    
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
-    if (BoxOverlap(gatherbox,celldata[cc].bb)) {
+    if (!(_mm256_mask_cmp_pd_mask(mask, gmin, m256d(celldata[cc].bb.max), _CMP_GT_OS)
+	  || _mm256_mask_cmp_pd_mask(mask, m256d(celldata[cc].bb.min), gmax, _CMP_GT_OS))) {
+    // if (BoxOverlap(gatherbox,celldata[cc].bb)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (celldata[cc].copen != -1) {
@@ -294,6 +311,8 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1) {
         neibmanager.AddNeibs(celldata[cc]);
+	gmin  = _mm256_maskz_load_pd(mask, gatherbox.min);
+	gmax  = _mm256_maskz_load_pd(mask, gatherbox.max);
         cc = celldata[cc].cnext;
       }
     }
