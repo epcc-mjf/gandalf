@@ -55,7 +55,7 @@ endif
 # Compiler mode flags
 # -------------------------------------------------------------------------------------------------
 # For Intel, look at the assembly code with
-# -Fa -fsource-asm -fverbose-asm -qopt-report-embed -masm=intel
+# -Fa -fsource-asm -qopt-report-embed -masm=intel
 
 ifeq ($(COMPILER_MODE),FAST)
 GCCOPT   += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
@@ -69,8 +69,8 @@ GCCOPT   += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
 # for testing the MPI problem ICCOPT   += -O3 -g -ipo -no-prec-div -fp-model fast=2 -xHost -fPIC -fno-exceptions -fp-trap=common
 # Try without ipo, and show the assembly code; then it is clear what
 # the vectorisation is.
-#ICCOPT   += -O3 -ipo -no-prec-div -fp-model fast=2 -xHost -fPIC -fno-exceptions -fno-rtti
-ICCOPT   += -O3 -no-prec-div -fp-model fast=2 -xHost -fPIC -fno-exceptions -fno-rtti -Fa -masm=intel -fsource-asm -qopt-report-embed
+#ICCOPT   += -O3 -no-prec-div -fp-model fast=2 -xHost -fPIC -fno-exceptions -fno-rtti -Fa -masm=intel -fsource-asm -qopt-report-embed
+ICCOPT   += -O3 -ipo -no-prec-div -fp-model fast=2 -xHost -fPIC -fno-exceptions -fno-rtti
 CLANGOPT += -O3 -ffast-math -fPIC
 else ifeq ($(COMPILER_MODE),DEBUG)
 GCCOPT   += -Og -g -pg -Wall -Wno-unknown-pragmas -Wno-reorder -fbounds-check -fPIC  -fno-rtti #-fprofile-arcs -ftest-coverage
@@ -90,6 +90,10 @@ ICCOPT   += -qopenmp
 CLANGOPT += -fopenmp -DOPENMP
 else
 ICCOPT   += -Wno-unknown-pragmas
+endif
+
+ifeq ($(INTEL_INTRINSICS),1)
+ICCOPT   += -DINTEL_INTRINSICS
 endif
 
 # Need to know if MPI is used before possibly adding ITAC
