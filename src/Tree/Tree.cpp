@@ -21,9 +21,9 @@
 //=================================================================================================
 
 
-//#ifdef INTEL_INTRINSICS
+#ifdef INTEL_INTRINSICS
 #include <immintrin.h>
-//#endif
+#endif
 
 #include <cstdlib>
 #include <cassert>
@@ -299,7 +299,9 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
       else if (celldata[cc].copen == -1) {
         int cc_now = cc;
 	cc = celldata[cc].cnext;
+#ifdef INTEL_INTRINSICS
 	if (cc < Ncell) _mm_prefetch(celldata[cc].bb.min, _MM_HINT_T1);
+#endif
         neibmanager.AddNeibs(celldata[cc_now]);
       }
     }
