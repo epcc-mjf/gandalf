@@ -57,6 +57,13 @@ endif
 # For Intel, look at the assembly code with
 # -Fa -fsource-asm -qopt-report-embed -masm=intel
 
+# I'm not sure whether to do this (or even c++11) - there are many
+# changes from the default of -std=gnu++98:  1998 ISO C++ standard
+# plus GNU* extensions.  Amongst changes are the pow function, but
+# kernels are tabulated, once, so the speed of pow is not important.
+#ICCOPT   += -std=c++17
+
+
 ifeq ($(COMPILER_MODE),FAST)
 GCCOPT   += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
 # -fast implies -static, which won't find, e.g., libm on DIaL.  And
