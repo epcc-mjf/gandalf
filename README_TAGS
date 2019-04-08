@@ -1,0 +1,1 @@
+etags --language=c++ $(find src -name '*.[hH]*') $(find src -name '*.[cC]*')
