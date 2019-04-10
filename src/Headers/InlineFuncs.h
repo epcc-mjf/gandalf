@@ -368,24 +368,6 @@ inline FLOAT clamp (FLOAT value, FLOAT min, FLOAT max)
 //  BoxOverlap
 /// Check if two bounding boxes overlap.  If yes, then return true.
 //=================================================================================================
-#ifdef INTEL_INTRINSICS
-template<int ndim> bool BoxOverlap
- (const Box<ndim>& box1,
-  const Box<ndim>& box2)
-{
-  __mmask8 mask = (1<<ndim)-1; // 0...0 followed by ndim 1s
-  auto m256d = [](const FLOAT * x){return *reinterpret_cast<const __m256d*>(x);};
-
-  // MJF This is all only correct for FLOAT=double.
-  // if ( any(box2.min > box2.max) || any(box2.min > box1.max) ) then false else true
-  if (_mm256_mask_cmp_pd_mask(mask, m256d(box1.min), m256d(box2.max), _CMP_GT_OS)
-      || _mm256_mask_cmp_pd_mask(mask, m256d(box2.min), m256d(box1.max), _CMP_GT_OS))
-    return false;
-  // C++20 [[likely]] return false;
-  else
-    return true;
-}
-#else // ! defined INTEL_INTRINSICS
 template<int ndim> bool BoxOverlap
  (const Box<ndim>& box1,
   const Box<ndim>& box2)
@@ -420,71 +402,6 @@ template<int ndim> bool BoxOverlap
     if (box2.min[1] > box1.max[1]) return false;
     if (box1.min[2] > box2.max[2]) return false;
     if (box2.min[2] > box1.max[2]) return false;
-    return true;
-  }
-}
-#endif // INTEL_INTRINSICS
-
-
-
-/*
-//=================================================================================================
-//  BoxOverlap_openmp
-/// Check if two bounding boxes overlap.  If yes, then return true.
-//  Intel 19 (and earlier) does not compile this properly with AVX-512
-//=================================================================================================
-template<int ndim> bool BoxOverlap_openmp
- (const Box<ndim>& box1,
-  const Box<ndim>& box2)
-{
-  bool no_overlap = false;
-#pragma omp simd reduction(||:no_overlap)
-  for (int k=0; k<ndim; k++) {
-    no_overlap = no_overlap || box1.min[k] > box2.max[k];
-  }
-  if (no_overlap) return false;
-#pragma omp simd reduction(||:no_overlap)
-  for (int k=0; k<ndim; k++) {
-    no_overlap = no_overlap || box2.min[k] > box1.max[k];
-  }
-  if (no_overlap) return false;
-  return true;
-}
-
-
-
-*/
-//=================================================================================================
-//  BoxOverlap_old
-/// Check if two bounding boxes overlap.  If yes, then return true.
-//=================================================================================================
-inline bool BoxOverlap_old
- (const int ndim,
-  const FLOAT *box1min,                ///< Minimum extent of box 1
-  const FLOAT *box1max,                ///< Maximum extent of box 1
-  const FLOAT *box2min,                ///< Minimum extent of box 2
-  const FLOAT *box2max)                ///< Maximum extent of box 2
-{
-  if (ndim == 1) {
-    if (box1min[0] > box2max[0]) return false;
-    if (box2min[0] > box1max[0]) return false;
-    return true;
-  }
-  else if (ndim == 2) {
-    if (box1min[0] > box2max[0]) return false;
-    if (box2min[0] > box1max[0]) return false;
-    if (box1min[1] > box2max[1]) return false;
-    if (box2min[1] > box1max[1]) return false;
-    return true;
-  }
-  else {
-    //MJF reorder these for better vectorisation?
-    if (box1min[0] > box2max[0]) return false;
-    if (box2min[0] > box1max[0]) return false;
-    if (box1min[1] > box2max[1]) return false;
-    if (box2min[1] > box1max[1]) return false;
-    if (box1min[2] > box2max[2]) return false;
-    if (box2min[2] > box1max[2]) return false;
     return true;
   }
 }
