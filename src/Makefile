@@ -52,6 +52,12 @@ ifneq ($(strip $(MPICPP)),)
   CPP=$(MPICPP)
 endif
 
+# C++ 17 (or as much as the compiler can do).  This will be at least
+# C++ 11 conforming apart from changes at C++ 14 and C++ 17.
+GCCOPT   += -std=c++17
+ICCOPT   += -std=c++17
+CLANGOPT += -std=c++17
+
 # Compiler mode flags
 # -------------------------------------------------------------------------------------------------
 # For Intel, look at the assembly code with
