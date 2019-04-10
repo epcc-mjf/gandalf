@@ -281,6 +281,14 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   //===============================================================================================
   while (cc < Ncell) {
 
+    int next = celldata[cc].cnext;
+#ifdef INTEL_INTRINSICS
+    if (next < Ncell) {
+      _mm_prefetch(&celldata[next].cnext, _MM_HINT_T1);
+      _mm_prefetch(celldata[next].bb.min, _MM_HINT_T1);
+    }
+#endif
+
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
     if (BoxOverlap(gatherbox,celldata[cc].bb)) {
@@ -292,24 +300,20 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
 
       // Ignore any empty cells
       else if (celldata[cc].N == 0) {
-        cc = celldata[cc].cnext;
+        cc = next;
       }
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1) {
-        int cc_now = cc;
-	cc = celldata[cc].cnext;
-#ifdef INTEL_INTRINSICS
-	if (cc < Ncell) _mm_prefetch(celldata[cc].bb.min, _MM_HINT_T1);
-#endif
-        neibmanager.AddNeibs(celldata[cc_now]);
+        neibmanager.AddNeibs(celldata[cc]);
+        cc = next;
       }
     }
 
     // If not in range, then open next cell
     //---------------------------------------------------------------------------------------------
     else {
-      cc = celldata[cc].cnext;
+      cc = next;
     }
 
   };
@@ -448,6 +452,15 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
   //===============================================================================================
   while (cc < Ncell) {
 
+    int next = celldata[cc].cnext;
+#ifdef INTEL_INTRINSICS
+    if (next < Ncell) {
+      _mm_prefetch(&celldata[next].cnext, _MM_HINT_T1);
+      _mm_prefetch(celldata[next].bb.min, _MM_HINT_T1);
+      _mm_prefetch(celldata[next].hbox.min, _MM_HINT_T1);
+    }
+#endif
+
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
     if (BoxOverlap(cell.bb, celldata[cc].hbox) ||
@@ -460,13 +473,13 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 
       // Ignore empty cells
       else if (celldata[cc].N == 0) {
-        cc = celldata[cc].cnext;
+        cc = next;
       }
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1) {
         neibmanager.AddNeibs(celldata[cc]) ;
-        cc = celldata[cc].cnext;
+        cc = next;
       }
 
 
@@ -475,7 +488,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
     // If not in range, then open next cell
     //---------------------------------------------------------------------------------------------
     else {
-      cc = celldata[cc].cnext;
+      cc = next;
     }
 
   };
@@ -506,6 +519,15 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
   //===============================================================================================
   while (cc < Ncell) {
 
+    int next = celldata[cc].cnext;
+#ifdef INTEL_INTRINSICS
+    if (next < Ncell) {
+      _mm_prefetch(&celldata[next].cnext, _MM_HINT_T1);
+      _mm_prefetch(celldata[next].bb.min, _MM_HINT_T1);
+      _mm_prefetch(celldata[next].hbox.min, _MM_HINT_T1);
+    }
+#endif
+
     // Check if bounding boxes overlap with each other (for potential SPH neibs)
     //---------------------------------------------------------------------------------------------
     if (GhostFinder.PeriodicBoxOverlap(cell.bb, celldata[cc].hbox) ||
@@ -518,13 +540,13 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
 
       // Ignore empty cells
       else if (celldata[cc].N == 0) {
-        cc = celldata[cc].cnext;
+        cc = next;
       }
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1) {
         neibmanager.AddPeriodicNeibs(celldata[cc]) ;
-        cc = celldata[cc].cnext;
+        cc = next;
       }
 
     }
@@ -533,7 +555,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
     // If not in range, then open next cell
     //---------------------------------------------------------------------------------------------
     else {
-      cc = celldata[cc].cnext;
+      cc = next;
     }
 
   };

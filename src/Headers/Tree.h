@@ -273,13 +273,6 @@ protected:
     return ::BoxOverlap(box1, box2) ;
   }
 
-  bool BoxOverlap_old(const FLOAT box1min[ndim], const FLOAT box1max[ndim],
-		          const FLOAT box2min[ndim], const FLOAT box2max[ndim])
-  {
-    using ::BoxOverlap_old ;
-    return BoxOverlap_old(ndim, box1min, box1max, box2min, box2max) ;
-  }
-
   MAC_Type GetMacType() const {
     return gravity_mac ;
   }
