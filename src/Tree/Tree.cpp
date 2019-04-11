@@ -283,9 +283,11 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
 
     int next = celldata[cc].cnext;
 #ifdef INTEL_INTRINSICS
-    if (next < Ncell) {
-      _mm_prefetch(&celldata[next].cnext, _MM_HINT_T1);
-      _mm_prefetch(celldata[next].bb.min, _MM_HINT_T1);
+    if (celldata[cc].level >= ltot-5) { // Maybe 6 here
+      if (next < Ncell) {
+        _mm_prefetch(&celldata[next].cnext, _MM_HINT_T1);
+        _mm_prefetch(celldata[next].bb.min, _MM_HINT_T1);
+      }
     }
 #endif
 
@@ -454,10 +456,12 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 
     int next = celldata[cc].cnext;
 #ifdef INTEL_INTRINSICS
-    if (next < Ncell) {
-      _mm_prefetch(&celldata[next].cnext, _MM_HINT_T1);
-      _mm_prefetch(celldata[next].bb.min, _MM_HINT_T1);
-      _mm_prefetch(celldata[next].hbox.min, _MM_HINT_T1);
+    if (celldata[cc].level >= ltot-5) {
+      if (next < Ncell) {
+	_mm_prefetch(&celldata[next].cnext, _MM_HINT_T1);
+	_mm_prefetch(celldata[next].bb.min, _MM_HINT_T1);
+	_mm_prefetch(celldata[next].hbox.min, _MM_HINT_T1);
+      }
     }
 #endif
 
@@ -521,10 +525,12 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
 
     int next = celldata[cc].cnext;
 #ifdef INTEL_INTRINSICS
-    if (next < Ncell) {
-      _mm_prefetch(&celldata[next].cnext, _MM_HINT_T1);
-      _mm_prefetch(celldata[next].bb.min, _MM_HINT_T1);
-      _mm_prefetch(celldata[next].hbox.min, _MM_HINT_T1);
+    if (celldata[cc].level >= ltot-5) {
+      if (next < Ncell) {
+        _mm_prefetch(&celldata[next].cnext, _MM_HINT_T1);
+        _mm_prefetch(celldata[next].bb.min, _MM_HINT_T1);
+        _mm_prefetch(celldata[next].hbox.min, _MM_HINT_T1);
+      }
     }
 #endif
 
