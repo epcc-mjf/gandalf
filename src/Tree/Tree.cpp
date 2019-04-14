@@ -281,11 +281,22 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   //===============================================================================================
   while (cc < Ncell) {
 
-    int next = celldata[cc].cnext;
 #ifdef INTEL_INTRINSICS
-    if (next < Ncell) {
-      _mm_prefetch(&celldata[next].cnext, _MM_HINT_T1);
-      _mm_prefetch(celldata[next].bb.min, _MM_HINT_T1);
+    {
+      const int next = celldata[cc].cnext;
+      const int open = celldata[cc].copen;
+      if (next < Ncell) {
+	// A test for next < Ncell is not needed:  prefetch will not cause a fault
+	// if the address to be prefetched is invalid.
+	_mm_prefetch(&celldata[next].cnext, _MM_HINT_T1);
+	_mm_prefetch(celldata[next].bb.min, _MM_HINT_T1);
+      }
+      if (open != -1) {
+	// A test for open != -1 is not needed:  prefetch will not cause a fault
+	// if the address to be prefetched is invalid.
+	_mm_prefetch(&celldata[open].cnext, _MM_HINT_T1);
+	_mm_prefetch(celldata[open].bb.min, _MM_HINT_T1);
+      }
     }
 #endif
 
@@ -300,20 +311,20 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
 
       // Ignore any empty cells
       else if (celldata[cc].N == 0) {
-        cc = next;
+        cc = celldata[cc].cnext;
       }
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1) {
         neibmanager.AddNeibs(celldata[cc]);
-        cc = next;
+        cc = celldata[cc].cnext;
       }
     }
 
     // If not in range, then open next cell
     //---------------------------------------------------------------------------------------------
     else {
-      cc = next;
+      cc = celldata[cc].cnext;
     }
 
   };
@@ -452,12 +463,24 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
   //===============================================================================================
   while (cc < Ncell) {
 
-    int next = celldata[cc].cnext;
 #ifdef INTEL_INTRINSICS
-    if (next < Ncell) {
-      _mm_prefetch(&celldata[next].cnext, _MM_HINT_T1);
-      _mm_prefetch(celldata[next].bb.min, _MM_HINT_T1);
-      _mm_prefetch(celldata[next].hbox.min, _MM_HINT_T1);
+    {
+      const int next = celldata[cc].cnext;
+      const int open = celldata[cc].copen;
+      if (next < Ncell) {
+	// A test for next < Ncell is not needed:  prefetch will not cause a fault
+	// if the address to be prefetched is invalid.
+	_mm_prefetch(&celldata[next].cnext, _MM_HINT_T1);
+	_mm_prefetch(celldata[next].bb.min, _MM_HINT_T1);
+	_mm_prefetch(celldata[next].hbox.min, _MM_HINT_T1);
+      }
+      if (open != -1) {
+	// A test for open != -1 is not needed:  prefetch will not cause a fault
+	// if the address to be prefetched is invalid.
+	_mm_prefetch(&celldata[open].cnext, _MM_HINT_T1);
+	_mm_prefetch(celldata[open].bb.min, _MM_HINT_T1);
+	_mm_prefetch(celldata[open].hbox.min, _MM_HINT_T1);
+      }
     }
 #endif
 
@@ -473,13 +496,13 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 
       // Ignore empty cells
       else if (celldata[cc].N == 0) {
-        cc = next;
+        cc = celldata[cc].cnext;
       }
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1) {
         neibmanager.AddNeibs(celldata[cc]) ;
-        cc = next;
+        cc = celldata[cc].cnext;
       }
 
 
@@ -488,7 +511,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
     // If not in range, then open next cell
     //---------------------------------------------------------------------------------------------
     else {
-      cc = next;
+      cc = celldata[cc].cnext;
     }
 
   };
@@ -519,12 +542,24 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
   //===============================================================================================
   while (cc < Ncell) {
 
-    int next = celldata[cc].cnext;
 #ifdef INTEL_INTRINSICS
-    if (next < Ncell) {
-      _mm_prefetch(&celldata[next].cnext, _MM_HINT_T1);
-      _mm_prefetch(celldata[next].bb.min, _MM_HINT_T1);
-      _mm_prefetch(celldata[next].hbox.min, _MM_HINT_T1);
+    {
+      const int next = celldata[cc].cnext;
+      const int open = celldata[cc].copen;
+      if (next < Ncell) {
+	// A test for next < Ncell is not needed:  prefetch will not cause a fault
+	// if the address to be prefetched is invalid.
+	_mm_prefetch(&celldata[next].cnext, _MM_HINT_T1);
+	_mm_prefetch(celldata[next].bb.min, _MM_HINT_T1);
+	_mm_prefetch(celldata[next].hbox.min, _MM_HINT_T1);
+      }
+      if (open != -1) {
+	// A test for open != -1 is not needed:  prefetch will not cause a fault
+	// if the address to be prefetched is invalid.
+	_mm_prefetch(&celldata[open].cnext, _MM_HINT_T1);
+	_mm_prefetch(celldata[open].bb.min, _MM_HINT_T1);
+	_mm_prefetch(celldata[open].hbox.min, _MM_HINT_T1);
+      }
     }
 #endif
 
@@ -540,13 +575,13 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
 
       // Ignore empty cells
       else if (celldata[cc].N == 0) {
-        cc = next;
+        cc = celldata[cc].cnext;
       }
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1) {
         neibmanager.AddPeriodicNeibs(celldata[cc]) ;
-        cc = next;
+        cc = celldata[cc].cnext;
       }
 
     }
@@ -555,7 +590,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
     // If not in range, then open next cell
     //---------------------------------------------------------------------------------------------
     else {
-      cc = next;
+      cc = celldata[cc].cnext;
     }
 
   };
