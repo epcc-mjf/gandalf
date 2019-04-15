@@ -21,6 +21,28 @@ template <int ndim>
 struct TreeCellBase {
   // MJF All this may not be OK if int becomes long for larger numbers of cells.
   // MJF This is all only correct for FLOAT=double.
+  alignas(CACHE_LINE) Box<ndim> bb ;   ///< Bounding box
+  // For ndim=3 and FLOAT=double, this should be cacheline + 2*3*8 = bytes (no
+  // padding at the end of BoxOverlap).
+  int cnext;                           ///< i.d. of next cell if not opened
+  int copen;                           ///< i.d. of first child cell
+  int N;                               ///< No. of particles in cell
+  int id;                              ///< Cell id
+  // 1 cache line.  id is put here to get alignment
+  int ifirst;                          ///< i.d. of first particle in cell
+  int ilast;                           ///< i.d. of last particle in cell
+  // cacheline + 2*4 = 8 bytes, so hbox will not need any padding at the start.
+  Box<ndim> hbox;                      ///< Bounding box for smoothing volume
+  Box<ndim> vbox ;                     ///< Velocity space bounding box
+  FLOAT hmax;                          ///< Maximum smoothing length inside cell
+  int parent;                          ///< Id of the cell's parent
+  int level;                           ///< Level of cell on tree
+  int Nactive;                         ///< No. of active particles in cell
+  float maxsound;                      ///< Maximum sound speed inside the cell
+  FLOAT cdistsqd;                      ///< Minimum distance to use COM values
+  FLOAT mac;                           ///< Multipole-opening criterion value
+  FLOAT r[ndim];   ///< Position of cell COM
+  /*
   alignas(CACHE_LINE) int cnext;       ///< i.d. of next cell if not opened
   int copen;                           ///< i.d. of first child cell
   int id;                              ///< Cell id
@@ -46,9 +68,9 @@ struct TreeCellBase {
   //alignas(AVX_LENGTH) FLOAT r[ndim];   ///< Position of cell COM
   static_assert(ndim <= AVX_LENGTH/sizeof(FLOAT));
   alignas(AVX_LENGTH) FLOAT r[AVX_LENGTH/sizeof(FLOAT)];   ///< Position of cell COM
+  */
   FLOAT m;                             ///< Mass contained in cell
   FLOAT rmax;                          ///< Radius of bounding sphere
-  FLOAT hmax;                          ///< Maximum smoothing length inside cell
   FLOAT q[5];                          ///< Quadrupole moment tensor
   union {
     FLOAT amin;                        ///< Minimum grav accel of particles in the cell

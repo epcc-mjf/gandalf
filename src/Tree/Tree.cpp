@@ -21,10 +21,6 @@
 //=================================================================================================
 
 
-#ifdef INTEL_INTRINSICS
-#include <immintrin.h>
-#endif
-
 #include <cstdlib>
 #include <cassert>
 #include <iostream>
@@ -281,25 +277,6 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   //===============================================================================================
   while (cc < Ncell) {
 
-#ifdef INTEL_INTRINSICS
-    {
-      const int next = celldata[cc].cnext;
-      const int open = celldata[cc].copen;
-      if (next < Ncell) {
-	// A test for next < Ncell is not needed:  prefetch will not cause a fault
-	// if the address to be prefetched is invalid.
-	_mm_prefetch(&celldata[next].cnext, _MM_HINT_T1);
-	_mm_prefetch(celldata[next].bb.min, _MM_HINT_T1);
-      }
-      if (open != -1) {
-	// A test for open != -1 is not needed:  prefetch will not cause a fault
-	// if the address to be prefetched is invalid.
-	_mm_prefetch(&celldata[open].cnext, _MM_HINT_T1);
-	_mm_prefetch(celldata[open].bb.min, _MM_HINT_T1);
-      }
-    }
-#endif
-
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
     if (BoxOverlap(gatherbox,celldata[cc].bb)) {
@@ -463,31 +440,10 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
   //===============================================================================================
   while (cc < Ncell) {
 
-#ifdef INTEL_INTRINSICS
-    {
-      const int next = celldata[cc].cnext;
-      const int open = celldata[cc].copen;
-      if (next < Ncell) {
-	// A test for next < Ncell is not needed:  prefetch will not cause a fault
-	// if the address to be prefetched is invalid.
-	_mm_prefetch(&celldata[next].cnext, _MM_HINT_T1);
-	_mm_prefetch(celldata[next].bb.min, _MM_HINT_T1);
-	_mm_prefetch(celldata[next].hbox.min, _MM_HINT_T1);
-      }
-      if (open != -1) {
-	// A test for open != -1 is not needed:  prefetch will not cause a fault
-	// if the address to be prefetched is invalid.
-	_mm_prefetch(&celldata[open].cnext, _MM_HINT_T1);
-	_mm_prefetch(celldata[open].bb.min, _MM_HINT_T1);
-	_mm_prefetch(celldata[open].hbox.min, _MM_HINT_T1);
-      }
-    }
-#endif
-
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
-    if (BoxOverlap(cell.bb, celldata[cc].hbox) ||
-        BoxOverlap(cell.hbox, celldata[cc].bb)) {
+    if (BoxOverlap(cell.hbox, celldata[cc].bb) ||
+        BoxOverlap(cell.bb, celldata[cc].hbox)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (celldata[cc].copen != -1) {
@@ -542,31 +498,10 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
   //===============================================================================================
   while (cc < Ncell) {
 
-#ifdef INTEL_INTRINSICS
-    {
-      const int next = celldata[cc].cnext;
-      const int open = celldata[cc].copen;
-      if (next < Ncell) {
-	// A test for next < Ncell is not needed:  prefetch will not cause a fault
-	// if the address to be prefetched is invalid.
-	_mm_prefetch(&celldata[next].cnext, _MM_HINT_T1);
-	_mm_prefetch(celldata[next].bb.min, _MM_HINT_T1);
-	_mm_prefetch(celldata[next].hbox.min, _MM_HINT_T1);
-      }
-      if (open != -1) {
-	// A test for open != -1 is not needed:  prefetch will not cause a fault
-	// if the address to be prefetched is invalid.
-	_mm_prefetch(&celldata[open].cnext, _MM_HINT_T1);
-	_mm_prefetch(celldata[open].bb.min, _MM_HINT_T1);
-	_mm_prefetch(celldata[open].hbox.min, _MM_HINT_T1);
-      }
-    }
-#endif
-
     // Check if bounding boxes overlap with each other (for potential SPH neibs)
     //---------------------------------------------------------------------------------------------
-    if (GhostFinder.PeriodicBoxOverlap(cell.bb, celldata[cc].hbox) ||
-        GhostFinder.PeriodicBoxOverlap(cell.hbox, celldata[cc].bb)) {
+    if (GhostFinder.PeriodicBoxOverlap(cell.hbox, celldata[cc].bb) ||
+        GhostFinder.PeriodicBoxOverlap(cell.bb, celldata[cc].hbox)) {
 
       // If not a leaf-cell, then open cell to first child cell
       if (celldata[cc].copen != -1) {

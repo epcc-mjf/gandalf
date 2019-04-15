@@ -52,14 +52,8 @@ enum boundaryEnum{openBoundary, periodicBoundary, mirrorBoundary, wallBoundary, 
 //=================================================================================================
 template <int ndim>
 struct Box {
-
-  // MJF This is all only correct for FLOAT=double.
-  //alignas(CACHE_LINE) FLOAT min[ndim];                     ///< Minimum bounding box extent
-  //alignas(AVX_LENGTH) FLOAT max[ndim];                     ///< Maximum bounding box extent
-  static_assert(ndim <= AVX_LENGTH/sizeof(FLOAT));
-  alignas(CACHE_LINE) FLOAT min[AVX_LENGTH/sizeof(FLOAT)];                     ///< Minimum bounding box extent
-  alignas(AVX_LENGTH) FLOAT max[AVX_LENGTH/sizeof(FLOAT)];                     ///< Maximum bounding box extent
-  // MJF 1 cache line
+  FLOAT min[ndim];                     ///< Minimum bounding box extent
+  FLOAT max[ndim];                     ///< Maximum bounding box extent
 
   Box () {
     for (int k=0; k<ndim; k++) {
