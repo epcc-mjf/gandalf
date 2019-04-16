@@ -22,63 +22,41 @@ struct TreeCellBase {
   // MJF All this may not be OK if int becomes long for larger numbers of cells.
   // MJF This is all only correct for FLOAT=double.
   alignas(CACHE_LINE) Box<ndim> bb ;   ///< Bounding box
-  // For ndim=3 and FLOAT=double, this should be cacheline + 2*3*8 = bytes (no
-  // padding at the end of BoxOverlap).
+  // For ndim=3 and FLOAT=double, this should be cacheline + 2*3*8 = 48 bytes
+  // (no padding at the end of BoxOverlap).
   int cnext;                           ///< i.d. of next cell if not opened
   int copen;                           ///< i.d. of first child cell
   int N;                               ///< No. of particles in cell
   int id;                              ///< Cell id
   // 1 cache line.  id is put here to get alignment
-  int ifirst;                          ///< i.d. of first particle in cell
-  int ilast;                           ///< i.d. of last particle in cell
-  // cacheline + 2*4 = 8 bytes, so hbox will not need any padding at the start.
-  Box<ndim> hbox;                      ///< Bounding box for smoothing volume
-  Box<ndim> vbox ;                     ///< Velocity space bounding box
-  FLOAT hmax;                          ///< Maximum smoothing length inside cell
+  alignas(CACHE_LINE) Box<ndim> vbox ; ///< Velocity space bounding box
   int parent;                          ///< Id of the cell's parent
   int level;                           ///< Level of cell on tree
   int Nactive;                         ///< No. of active particles in cell
   float maxsound;                      ///< Maximum sound speed inside the cell
+  // 1 cache line.
+  alignas(CACHE_LINE) FLOAT r[ndim];   ///< Position of cell COM
   FLOAT cdistsqd;                      ///< Minimum distance to use COM values
   FLOAT mac;                           ///< Multipole-opening criterion value
-  FLOAT r[ndim];   ///< Position of cell COM
-  /*
-  alignas(CACHE_LINE) int cnext;       ///< i.d. of next cell if not opened
-  int copen;                           ///< i.d. of first child cell
-  int id;                              ///< Cell id
-  int parent;                          ///< Id of the cell's parent
-  int level;                           ///< Level of cell on tree
-  int ifirst;                          ///< i.d. of first particle in cell
-  int ilast;                           ///< i.d. of last particle in cell
-  int N;                               ///< No. of particles in cell
-  int Nactive;                         ///< No. of active particles in cell
-  float maxsound;                      ///< Maximum sound speed inside the cell
-  // MJF This is 10 = 5 * 8
-  FLOAT cdistsqd;                      ///< Minimum distance to use COM values
-  FLOAT mac;                           ///< Multipole-opening criterion value
-  // MJF For FLOAT=double this is 10 * 4 + 2 * 8 = 7 * 8
-  // MJF Is padding inserted, since Box is CACHE_LINE ndim * 8 + AVX_LENGTH ndim * 8
-  // MJF 1 cache line
-  Box<ndim> bb ;                       ///< Bounding box
-  // MJF 1 cache line
-  Box<ndim> hbox;                      ///< Bounding box for smoothing volume
-  // MJF 1 cache line
-  Box<ndim> vbox ;                     ///< Velocity space bounding box
-  // MJF 1 cache line
-  //alignas(AVX_LENGTH) FLOAT r[ndim];   ///< Position of cell COM
-  static_assert(ndim <= AVX_LENGTH/sizeof(FLOAT));
-  alignas(AVX_LENGTH) FLOAT r[AVX_LENGTH/sizeof(FLOAT)];   ///< Position of cell COM
-  */
   FLOAT m;                             ///< Mass contained in cell
   FLOAT rmax;                          ///< Radius of bounding sphere
-  FLOAT q[5];                          ///< Quadrupole moment tensor
   union {
     FLOAT amin;                        ///< Minimum grav accel of particles in the cell
     FLOAT macfactor;                   ///< Potential based accuracy factor.
   } ;
+  // 1 cache line
+  alignas(CACHE_LINE) Box<ndim> hbox;  ///< Bounding box for smoothing volume
+  // For ndim=3 and FLOAT=double, this should be cacheline + 2*3*8 = 48 bytes
+  int ifirst;                          ///< i.d. of first particle in cell
+  int ilast;                           ///< i.d. of last particle in cell
+  FLOAT hmax;                          ///< Maximum smoothing length inside cell
+  // 1 cache line.
+  alignas(CACHE_LINE) FLOAT q[5];      ///< Quadrupole moment tensor
 #ifdef MPI_PARALLEL
   double worktot;                      ///< Total work in cell
 #endif
+  // Align c1 and c2 of KDTreeCell to a cache line (see KDTree.h) => 6 cache
+  // lines per TreeCell.
 
   void ComputeCellCentre(FLOAT rc[ndim]) const {
     for (int k=0; k<ndim; k++) rc[k] = rcell(k);

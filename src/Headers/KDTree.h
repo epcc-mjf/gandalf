@@ -24,6 +24,11 @@
 #ifndef _KD_TREE_H_
 #define _KD_TREE_H_
 
+#include <type_traits>
+#define CACHE_LINE 0x40
+#define AVX512_LENGTH 0x40
+#define AVX_LENGTH 0x20
+
 #include <assert.h>
 #include <iostream>
 #include <string>
@@ -49,7 +54,9 @@ using namespace std;
 //=================================================================================================
 template <int ndim>
 struct KDTreeCell : public TreeCellBase<ndim> {
-  int c1;                           ///< First child cell
+  // This is not Standard Layout, since TreeCellBase has non-static data
+  // members.  So, how big is this class?
+  alignas(CACHE_LINE) int c1;                           ///< First child cell
   int c2;                           ///< Second child cell
 
 #ifdef MPI_PARALLEL
