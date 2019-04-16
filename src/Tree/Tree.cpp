@@ -265,7 +265,6 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   const ParticleType<ndim>* partdata = reinterpret_cast<const ParticleType<ndim>* >(part_gen) ;
 
   int cc = 0;                          // Cell counter
-  int ccc = 0;                          // Cell counter
   Box<ndim> gatherbox;            // Gather neighbour box
   assert(partdata != NULL);
 
@@ -278,10 +277,6 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
 
   //===============================================================================================
   while (cc < Ncell) {
-
-    // Show that access is almost streaming.
-    cout << setw(10) << cc - ccc << endl;
-    ccc = cc;
 
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
