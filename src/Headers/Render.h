@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Render.h
 //  Contains class and function definitions for generating rendered plots in

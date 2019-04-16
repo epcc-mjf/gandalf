@@ -1,3 +1,4 @@
+#include <aligned_new>
 
 #ifndef _UNIT_INFO_H_
 #define _UNIT_INFO_H_

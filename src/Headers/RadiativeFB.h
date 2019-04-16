@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  RadiativeFB.h
 //  Class definitions of radiative feedback methods.

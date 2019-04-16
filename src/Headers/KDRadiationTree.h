@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  KDRadiationTree.h
 //  Class for controlling and propagating radiation on a KD-tree.

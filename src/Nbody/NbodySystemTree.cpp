@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  NbodySystemTree.cpp
 //  Contains all function definitions for constructing N-body nearest-neighbour

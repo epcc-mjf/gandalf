@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  GradhSph.cpp
 //  Contains all functions for calculating conservative 'grad-h' SPH quantities

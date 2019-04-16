@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  BruteForceTree.h
 //  Header file containing class definitions for constructing and updating the brute force tree.

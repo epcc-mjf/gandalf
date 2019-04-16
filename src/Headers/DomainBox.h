@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  DomainBox.h
 //  Contans basic box and Domain box data structures.  Also contains various

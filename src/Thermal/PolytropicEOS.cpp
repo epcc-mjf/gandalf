@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  PolytropicEOS.cpp
 //  Contains all function definitions for the Polytropic Equation of state.

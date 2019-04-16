@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  MpiControl.h
 //  Main MPI class for controlling the distribution of work amongst all MPI

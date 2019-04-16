@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Hydrodynamics.cpp
 //  Contains important default routines for Hydrodynamics class.

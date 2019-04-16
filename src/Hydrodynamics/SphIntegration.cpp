@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  SphIntegration.cpp
 //  Contains default functions for SphIntegration class.

@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  BasicIc.cpp
 //  Class for generating simple initial conditions for testing the IC regularisation algorithms.

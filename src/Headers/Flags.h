@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Flags.h
 //  Class for handling bit fl data structures

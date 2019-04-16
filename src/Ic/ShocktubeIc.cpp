@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  ShocktubeIc.cpp
 //  Class for generating initial conditions for Riemann shock-tube problems.

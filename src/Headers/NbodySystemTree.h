@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  NbodySystemTree.h
 //  Contains definitions for Nearest neighbour tree class and data structures.

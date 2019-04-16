@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  KDRadiationTree.cpp
 //  File containing all functions for KD-tree to propagate radiation packets.

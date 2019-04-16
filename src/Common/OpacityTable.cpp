@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  OpacityTable.cpp
 //  Contains functions for Rad-WS radiation cooling scheme (Stamatellos et al. 2007) class.

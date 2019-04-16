@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Ghosts.h
 //  Contains definitions for ghost particle class.

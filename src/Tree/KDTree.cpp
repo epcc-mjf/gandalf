@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  KDTree.cpp
 //  Contains all functions for building, stocking and walking for the

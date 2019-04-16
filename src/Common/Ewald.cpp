@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Ewald.cpp
 //  Class functions for computing periodic gravity, with either 1D, 2D or 3D periodicity.

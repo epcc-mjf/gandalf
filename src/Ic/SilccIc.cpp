@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  SilccIc.cpp
 //  Class for generating initial conditions for SILCC-like simulations.

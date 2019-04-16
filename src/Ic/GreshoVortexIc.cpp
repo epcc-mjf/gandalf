@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  GreshoVortexIc.cpp
 //  Class for generating initial conditions for Gresho-vortex simulations.

@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  SimulationIC.hpp
 //  Contains all routines for generating initial conditions on the fly.

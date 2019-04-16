@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  GhostNeighbours.hpp
 //  Contains the definitions of a class used for constructing periodic and mirror ghosts

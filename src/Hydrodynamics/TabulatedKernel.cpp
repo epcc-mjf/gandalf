@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  TabulatedKernel.cpp
 //  Contains functions for creating tabulated kernels for all required

@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  EnergyEquation.cpp
 //  Contains basic (empty) functions for Energy Equation with templates.

@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  SphIntegration.h
 //  Contains class definitions for all SPH integration schemes.

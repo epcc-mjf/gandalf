@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  MpiKDTreeDecomposition.cpp
 //  Contains functions for Main MPI class which controls the distribution of

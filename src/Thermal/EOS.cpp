@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  EOS.cpp
 //  Contains function definitions for the base Equation of state.

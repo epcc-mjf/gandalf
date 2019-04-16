@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Tree.cpp
 //  Contains all common functions for walking the tree.
@@ -273,16 +274,6 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   for (int k=0; k<ndim; k++) gatherbox.min[k] = cell.bb.min[k] - kernrange*hmax;
   for (int k=0; k<ndim; k++) gatherbox.max[k] = cell.bb.max[k] + kernrange*hmax;
 
-
-  for (cc = 0; cc < Ncell; cc++) {
-    cout << cc << hex
-	 << " celldata " << &celldata[cc]
-	 << " bb " << &celldata[cc].bb
-	 << " min " << &celldata[cc].bb.min[0]
-	 << " hbox " << &celldata[cc].hbox.min[0]
-	 << endl;
-  }
-  cc = 0;
 
   //===============================================================================================
   while (cc < Ncell) {

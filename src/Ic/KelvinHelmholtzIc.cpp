@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  KelvinHelmholtzIc.cpp
 //  Class for generating initial conditions for Khi-like simulations.

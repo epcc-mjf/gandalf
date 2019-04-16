@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  RiemannSolver.cpp
 //  Contains all available Riemann solver functions.

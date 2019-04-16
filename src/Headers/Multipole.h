@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Multipole.h
 //  Header file containing class definitions multipole gravitational forces

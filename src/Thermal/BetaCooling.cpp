@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  BetaCooling
 //  Simple beta-cooling model for self-gravitating discs

@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  SoundwaveIc.cpp
 //  Class for generating initial conditions for simple turbulent core simulations.

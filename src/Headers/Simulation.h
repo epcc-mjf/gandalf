@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Simulation.h
 //  Contains definitions for following simulation classes:

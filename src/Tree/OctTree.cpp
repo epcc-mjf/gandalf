@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  OctTree.cpp
 //  Contains all functions for building, stocking and walking for the

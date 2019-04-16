@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  BinaryIO.h
 //  Helper classes to write and read from binary files

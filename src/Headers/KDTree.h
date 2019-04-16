@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  KDTree.h
 //  Header file containing class definitions for constructing and updating the KD-tree.

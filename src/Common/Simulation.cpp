@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Simulation.cpp
 //  Contains all main functions controlling the simulation work-flow.

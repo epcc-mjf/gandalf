@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  ICRegularization.cpp
 //  Implementation of the initial conditions regularization

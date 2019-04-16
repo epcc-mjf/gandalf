@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Ghosts.cpp
 //  Contains all routines for searching for and creating ghost particles.

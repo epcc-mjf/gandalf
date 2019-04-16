@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  BossBodenheimerIc.cpp
 //  Class for generating initial conditions for Boss-Bodenheimer cloud simulations.

@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  SphSnapshot.h
 //  Contains definitions for SphSnapshot class

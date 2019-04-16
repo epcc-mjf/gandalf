@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  SM2012SphTree.cpp
 //  Contains all functions for building, stocking and walking for the

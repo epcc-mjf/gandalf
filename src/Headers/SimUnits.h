@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  SimUnits.h
 //  Contains definitions for all unit scaling classes.

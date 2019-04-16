@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  DiscLocallyIsotherm.cpp
 //  Contains functions for a locally isothermal EOS used in discs.

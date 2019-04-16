@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  DustyBoxIc.cpp
 //  Class for generating initial conditions for ...

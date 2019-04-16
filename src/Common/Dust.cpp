@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Dust.cpp
 //  Contains the main implementation for the dust drag force classes.

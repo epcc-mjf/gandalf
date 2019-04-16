@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  SystemParticle.h
 //  Main system particle data structure

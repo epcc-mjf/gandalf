@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  KhiIc.cpp
 //  Class for generating initial conditions for Khi-like simulations.

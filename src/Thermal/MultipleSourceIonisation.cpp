@@ -1,3 +1,4 @@
+#include <aligned_new>
 #include "Precision.h"
 #include "Particle.h"
 #include "Debug.h"

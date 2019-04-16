@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Ewald.h
 //  Contains class definition for computing periodic gravity in 1D, 2D and 3D.

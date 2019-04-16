@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Sph.h
 //  Contains main parent virtual class plus child classes for various SPH

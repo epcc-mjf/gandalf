@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  CodeTiming.cpp
 //  Contains class functions for recording CPU and wall-clock times for

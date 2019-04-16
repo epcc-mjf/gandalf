@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  SphSnapshot.cpp
 //  Contains all functions for managing SPH snapshot objects.

@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Exception.h
 //  Definitions of classes for throwing exceptions in GANDALF.

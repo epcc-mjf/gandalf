@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=============================================================================
 //  MpiNode.cpp
 //  Contains functions relating to the MPI node class.

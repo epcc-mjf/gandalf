@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  SphNeighbourSearch.h
 //  Header file containing class definitions for all SPH neighbour searching algorithms.

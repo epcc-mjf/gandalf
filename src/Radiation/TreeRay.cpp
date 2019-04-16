@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  TreeRay.cpp
 //  Contains main TreeRay algorithm subroutines.

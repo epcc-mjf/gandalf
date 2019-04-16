@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  SimUnits.cpp
 //  Contains functions for computing all scaling factors for converting

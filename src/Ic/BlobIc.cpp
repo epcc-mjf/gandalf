@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  BlobIc.cpp
 //  Class for generating initial conditions ...

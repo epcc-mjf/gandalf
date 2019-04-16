@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  QuinticKernel.cpp
 //  Quintic Kernel set-up functions

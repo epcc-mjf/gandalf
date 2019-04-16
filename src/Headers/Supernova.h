@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Supernova.h
 //  Contains all definitions for classes related to creating Supernova via adding new particles

@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  SphNeighbourSearch.cpp
 //  Template instantiation of NeighbourSearch and SphNeighbourSearch classes

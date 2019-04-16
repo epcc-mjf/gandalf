@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  SM2012Sph.cpp
 //  Contains all functions for calculating SPH quantities using the method

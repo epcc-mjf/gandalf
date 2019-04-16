@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  IonisingRadiationEOS.cpp
 //  Contains all function definitions for a equation of state for ionising radiation module.

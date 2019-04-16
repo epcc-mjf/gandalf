@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Parameters.cpp
 //  Contains all functions for calculating default values and reading in

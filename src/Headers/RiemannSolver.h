@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  RiemannSolver.h
 //  Contains all class definitions for Riemann solvers used in Godunov scheme.

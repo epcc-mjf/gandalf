@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Render.cpp
 //  Contains all functions for generating rendered images from SPH snapshots.

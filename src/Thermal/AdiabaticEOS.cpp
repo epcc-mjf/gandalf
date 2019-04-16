@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  AdiabaticEOS.cpp
 //  Contains all function definitions for the Adiabatic Equation of state.

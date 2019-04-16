@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  GradhSphSimulation.cpp
 //  Contains all main functions controlling grad-h SPH simulation work-flow.

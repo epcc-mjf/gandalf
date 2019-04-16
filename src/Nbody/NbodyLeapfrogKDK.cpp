@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  NbodyLeapfrogKDK.cpp
 //  Contains functions for integrating star particle positions and velocities

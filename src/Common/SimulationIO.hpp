@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  SimulationIO.hpp
 //  Contains all functions for reading and writing simulation data to/from snapshot files.

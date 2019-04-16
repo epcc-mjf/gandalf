@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Nbody.cpp
 //  Contains main N-body class functions.

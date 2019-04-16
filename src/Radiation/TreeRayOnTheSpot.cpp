@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  TreeRayOnTheSpot.cpp
 //  Contains routines for "On-the-spot" physics module in TreeRay.

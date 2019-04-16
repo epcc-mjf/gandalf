@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=============================================================================
 //  MpiExport.h
 //  Header file containing definitions of structures needed to export particles

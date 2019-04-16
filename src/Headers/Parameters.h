@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=============================================================================
 //  Parameters.h
 //  Class definition for Parameters class.  Contains all data structures and

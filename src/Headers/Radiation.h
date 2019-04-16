@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Radiation.h
 //  Contains definitions for all classes that control the transport of

@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=============================================================================
 //  StarParticle.h
 //  Main star particle data structure

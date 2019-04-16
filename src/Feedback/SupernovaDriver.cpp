@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  SupernovaDriver.cpp
 //  Routines for creating supernova explosions in GANDALF simulations.

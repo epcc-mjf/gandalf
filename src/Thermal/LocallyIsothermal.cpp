@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  LocalIsotherm.cpp
 //  Contains functions for a locally isothermal EOS.

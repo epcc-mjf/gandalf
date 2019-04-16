@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  RadwsEOS.cpp
 //  Contains all function definitions for the Radws Equation of state.

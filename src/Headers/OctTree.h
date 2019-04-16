@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  OctTree.h
 //  Header file containing class definitions for constructing and updating the octal tree.

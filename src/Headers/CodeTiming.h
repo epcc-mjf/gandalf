@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  CodeTiming.h
 //  Contains class for controlling internal timing routines.

@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Sph.cpp
 //  Contains important default routines for Sph class.

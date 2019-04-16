@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  DragLaws.h
 //  Contains the implementation for the dust drag law classes.

@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  MeshlessFVSimulation.cpp
 //  Contains all main functions controlling Meshless Finite-Volume simulation work-flow.

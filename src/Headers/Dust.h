@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Dust.h
 //  Contains main parent virtual class plus child classes for various dust

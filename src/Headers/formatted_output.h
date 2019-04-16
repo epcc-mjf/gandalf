@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=============================================================================
 //  formatted_output.h
 //  Helper class to output in custom way floats, integers and booleans

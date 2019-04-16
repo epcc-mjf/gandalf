@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  CommunicationHandler.h
 //  Classes that handle the communication of the particle data structures

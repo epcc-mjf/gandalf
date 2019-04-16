@@ -31,6 +31,7 @@
 
 %{
 #define SWIG_FILE_WITH_INIT
+#include <aligned_new>
 #include <signal.h>
 #include <string>
 #include "Exception.h"

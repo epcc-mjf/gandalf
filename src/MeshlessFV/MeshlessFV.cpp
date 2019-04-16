@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  MeshlessFV.cpp
 //  Contains all functions for calculating Meshless Finite-Volume Hydrodynamics quantities.

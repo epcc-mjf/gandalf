@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  InlineFuncs.h
 //  Contains definitions of any useful small utility functions that can be

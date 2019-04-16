@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  NeighbourSearch.h
 //  Header file containing virtual class definitions for all hydro neighbour searching algorithms.

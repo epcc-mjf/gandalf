@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  MpiNode.h
 //  Contains MPI node data class definition.

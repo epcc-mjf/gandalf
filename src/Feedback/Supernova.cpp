@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Supernova.cpp
 //  All routines for creating Supernova events via adding new particles to simulation

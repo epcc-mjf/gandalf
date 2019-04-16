@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Particle.cpp
 //  Contains all functions relating to particle type info.

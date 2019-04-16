@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  EnergyEquation.h
 //  Class definitions of main energy equation class plus inherited children

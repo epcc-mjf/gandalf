@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=============================================================================
 //  BinaryOrbit.h
 //  Contains definitions for binary orbit data structure.

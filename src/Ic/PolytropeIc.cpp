@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  PolytropeIc.cpp
 //  Subroutines used to generate initial conditions with a Polytrope density field.

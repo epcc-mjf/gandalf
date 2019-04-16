@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Ic.h
 //  Contains class for generating the initial conditions

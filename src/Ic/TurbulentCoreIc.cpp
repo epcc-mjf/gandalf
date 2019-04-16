@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  TurbulentCoreIc.cpp
 //  Class for generating initial conditions for simple turbulent core simulations.

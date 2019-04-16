@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  MfvNeighbourSearch.h
 //  Header file containing class definitions for all Meshless Finite-Volume neighbour searching

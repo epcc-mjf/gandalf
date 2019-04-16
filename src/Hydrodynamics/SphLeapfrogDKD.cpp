@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  SphLeapfrogDKD.cpp
 //  Contains functions for integrating SPH particle positions and velocities

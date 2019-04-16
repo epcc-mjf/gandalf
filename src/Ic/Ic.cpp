@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  IC.cpp
 //  Implementation of the initial conditions generation

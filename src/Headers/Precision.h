@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=============================================================================
 //  Precision.h
 //  Contains macro definitions for floating point precision in all routines.

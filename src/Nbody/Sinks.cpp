@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Sinks.cpp
 //  All routines for creating new sinks and accreting gas and updating all

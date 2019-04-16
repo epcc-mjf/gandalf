@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  MfvMusclSimulation.cpp
 //  Contains all main functions controlling SPH simulation work-flow.

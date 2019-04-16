@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  HydroTree.cpp
 //  Contains all functions for managing the tree for hydrodynamical particles.

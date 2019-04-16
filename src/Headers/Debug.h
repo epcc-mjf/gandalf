@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=============================================================================
 //  Debug.h
 //  Contains macro definitions of use debug functions.

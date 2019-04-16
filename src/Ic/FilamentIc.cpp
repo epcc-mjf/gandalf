@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  FilamentIc.cpp
 //  Class for generating initial conditions for simple filaments.

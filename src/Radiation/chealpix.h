@@ -1,3 +1,4 @@
+#include <aligned_new>
 /* -----------------------------------------------------------------------------
  *
  *  Copyright (C) 1997-2012 Krzysztof M. Gorski, Eric Hivon, Martin Reinecke,

@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  IsothermalEOS.cpp
 //  Contains all function definitions for the Isothermal Equation of state.

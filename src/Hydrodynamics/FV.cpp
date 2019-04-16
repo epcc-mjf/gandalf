@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  FV.cpp
 //  Virtual base class containing all common functionality for all Finite-Volume Hydrodynamics

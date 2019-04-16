@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  NbodySimulation.cpp
 //  Contains all main functions controlling N-body simulation work-flow.

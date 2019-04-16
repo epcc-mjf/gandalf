@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  NbodyParticle.h
 //  Main N-body particle data structure.

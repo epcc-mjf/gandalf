@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  SmoothingKernel.h
 //  Contains all routines for computing kernel functions, calculatiung and

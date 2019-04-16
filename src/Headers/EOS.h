@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  EOS.h
 //  Contains (virtual) definitions for equation of state class.

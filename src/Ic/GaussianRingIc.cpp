@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  GaussianRingIc.cpp
 //  Class for generating initial conditions ...

@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Barotropic2EOS.cpp
 //  Contains all function definitions for a barotropic Equation of state of

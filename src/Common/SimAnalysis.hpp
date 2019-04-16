@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  SimAnalysis.cpp
 //  Contains various analysis routines for Simulation object.

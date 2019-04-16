@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=================================================================================================
 //  Tree.h
 //  Header file containing class definition for generic spatial-tree data structure.

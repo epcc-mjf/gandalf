@@ -1,3 +1,4 @@
+#include <aligned_new>
 //=============================================================================
 //  SM2012SphSimulation.cpp
 //  Contains all main functions controlling Saitoh & Makino (2012) SPH
