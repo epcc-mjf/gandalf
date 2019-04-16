@@ -22,6 +22,11 @@
 //=================================================================================================
 
 
+#ifdef INTEL_INTRINSICS
+#include <immintrin.h>
+#define AHEAD 4
+#endif
+
 #include <cstdlib>
 #include <cassert>
 #include <iostream>
@@ -278,6 +283,13 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   //===============================================================================================
   while (cc < Ncell) {
 
+#ifdef INTEL_INTRINSICS
+    if (cc+AHEAD < Ncell) {
+      _mm_prefetch(&celldata[cc+AHEAD].bb, _MM_HINT_T1);
+      _mm_prefetch(&celldata[cc+AHEAD].hbox, _MM_HINT_T1);
+    }
+#endif
+
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
     if (BoxOverlap(gatherbox,celldata[cc].bb)) {
@@ -441,6 +453,13 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
   //===============================================================================================
   while (cc < Ncell) {
 
+#ifdef INTEL_INTRINSICS
+    if (cc+AHEAD < Ncell) {
+      _mm_prefetch(&celldata[cc+AHEAD].bb, _MM_HINT_T1);
+      _mm_prefetch(&celldata[cc+AHEAD].hbox, _MM_HINT_T1);
+    }
+#endif
+
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
     if (BoxOverlap(cell.hbox, celldata[cc].bb) ||
@@ -498,6 +517,13 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
   // Walk through all cells in tree to determine particle and cell interaction lists
   //===============================================================================================
   while (cc < Ncell) {
+
+#ifdef INTEL_INTRINSICS
+    if (cc+AHEAD < Ncell) {
+      _mm_prefetch(&celldata[cc+AHEAD].bb, _MM_HINT_T1);
+      _mm_prefetch(&celldata[cc+AHEAD].hbox, _MM_HINT_T1);
+    }
+#endif
 
     // Check if bounding boxes overlap with each other (for potential SPH neibs)
     //---------------------------------------------------------------------------------------------

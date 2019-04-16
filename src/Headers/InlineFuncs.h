@@ -384,25 +384,25 @@ template<int ndim> bool BoxOverlap
 }
 */
 {
-  if (ndim == 1) {
+  if (ndim == 3) {
     if (box1.min[0] > box2.max[0]) return false;
+    if (box1.min[1] > box2.max[1]) return false;
+    if (box1.min[2] > box2.max[2]) return false;
     if (box2.min[0] > box1.max[0]) return false;
+    if (box2.min[1] > box1.max[1]) return false;
+    if (box2.min[2] > box1.max[2]) return false;
     return true;
   }
   else if (ndim == 2) {
     if (box1.min[0] > box2.max[0]) return false;
-    if (box2.min[0] > box1.max[0]) return false;
     if (box1.min[1] > box2.max[1]) return false;
+    if (box2.min[0] > box1.max[0]) return false;
     if (box2.min[1] > box1.max[1]) return false;
     return true;
   }
   else {
     if (box1.min[0] > box2.max[0]) return false;
     if (box2.min[0] > box1.max[0]) return false;
-    if (box1.min[1] > box2.max[1]) return false;
-    if (box2.min[1] > box1.max[1]) return false;
-    if (box1.min[2] > box2.max[2]) return false;
-    if (box2.min[2] > box1.max[2]) return false;
     return true;
   }
 }
