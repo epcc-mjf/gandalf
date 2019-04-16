@@ -77,7 +77,9 @@ GCCOPT   += -O3 -ffast-math -fPIC -fno-exceptions -fno-rtti
 # Try without IPO, and show the assembly code; then it is clear what
 # the vectorisation is.
 # And without IPO is about 5% faster than with IPO.
-ICCOPT   += -O3 -no-prec-div -fp-model fast=2 -xHost -fPIC -fno-exceptions -fno-rtti -Fa -masm=intel -fsource-asm -qopt-report-embed
+# #include <aligned_new> uses throw, so allow exceptions (will this be slower?).
+#ICCOPT   += -O3 -no-prec-div -fp-model fast=2 -xHost -fPIC -fno-exceptions -fno-rtti -Fa -masm=intel -fsource-asm -qopt-report-embed
+ICCOPT   += -O3 -no-prec-div -fp-model fast=2 -xHost -fPIC -fno-rtti -Fa -masm=intel -fsource-asm -qopt-report-embed
 CLANGOPT += -O3 -ffast-math -fPIC
 else ifeq ($(COMPILER_MODE),DEBUG)
 GCCOPT   += -Og -g -pg -Wall -Wno-unknown-pragmas -Wno-reorder -fbounds-check -fPIC  -fno-rtti #-fprofile-arcs -ftest-coverage
