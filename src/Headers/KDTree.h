@@ -55,10 +55,7 @@ using namespace std;
 //=================================================================================================
 template <int ndim>
 struct KDTreeCell : public TreeCellBase<ndim> {
-  // This is not Standard Layout, since TreeCellBase has non-static data
-  // members.  So, how big is this class?  We could put c1, c2 into TreeCellBase
-  // to be sure - and have standard layout.
-  alignas(CACHE_LINE) int c1;                           ///< First child cell
+  int c1;                           ///< First child cell
   int c2;                           ///< Second child cell
 
 #ifdef MPI_PARALLEL

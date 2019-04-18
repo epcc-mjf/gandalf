@@ -30,6 +30,12 @@ struct TreeCellBase {
   int N;                               ///< No. of particles in cell
   int id;                              ///< Cell id
   // 1 cache line.  id is put here to get alignment
+  alignas(CACHE_LINE) Box<ndim> hbox;  ///< Bounding box for smoothing volume
+  // For ndim=3 and FLOAT=double, this should be cacheline + 2*3*8 = 48 bytes
+  int ifirst;                          ///< i.d. of first particle in cell
+  int ilast;                           ///< i.d. of last particle in cell
+  FLOAT hmax;                          ///< Maximum smoothing length inside cell
+  // 1 cache line.
   alignas(CACHE_LINE) Box<ndim> vbox ; ///< Velocity space bounding box
   int parent;                          ///< Id of the cell's parent
   int level;                           ///< Level of cell on tree
@@ -46,12 +52,6 @@ struct TreeCellBase {
     FLOAT macfactor;                   ///< Potential based accuracy factor.
   } ;
   // 1 cache line
-  alignas(CACHE_LINE) Box<ndim> hbox;  ///< Bounding box for smoothing volume
-  // For ndim=3 and FLOAT=double, this should be cacheline + 2*3*8 = 48 bytes
-  int ifirst;                          ///< i.d. of first particle in cell
-  int ilast;                           ///< i.d. of last particle in cell
-  FLOAT hmax;                          ///< Maximum smoothing length inside cell
-  // 1 cache line.
   alignas(CACHE_LINE) FLOAT q[5];      ///< Quadrupole moment tensor
 #ifdef MPI_PARALLEL
   double worktot;                      ///< Total work in cell

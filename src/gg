@@ -1,2 +1,3 @@
-gg () { grep -rI --exclude='*.s' --exclude='*.optrpt' --exclude='*.[od]' --exclude-dir=SM2013 --exclude-dir=MeshlessFV . -e '^ *void.*'$1'.*[^;]* *$'; }
-g () { grep -rI --exclude='*.s' --exclude='*.optrpt' --exclude='*.[od]' --exclude-dir=SM2013 --exclude-dir=MeshlessFV . -e $1; }
+gg () { grep -rI --exclude='*.s' --exclude='*.optrpt' --exclude='*.[od]' --exclude-dir=SM2013 --exclude-dir=MeshlessFV . -e '^ *void.*'"$1"'.*[^;]* *$'; }
+g () { grep -rI --exclude='*.s' --exclude='*.optrpt' --exclude='*.[od]' --exclude-dir=SM2013 --exclude-dir=MeshlessFV . -e "$1"; }
+gw  () { grep -rI --exclude='*.s' --exclude='*.optrpt' --exclude='*.[od]' --exclude-dir=SM2013 --exclude-dir=MeshlessFV . -w -e "$1"; }
