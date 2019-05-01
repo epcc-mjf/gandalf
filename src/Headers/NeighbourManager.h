@@ -10,6 +10,11 @@
 #define NEIGHBOURMANAGER_H_
 
 
+#ifdef INTEL_INTRINSICS
+#include <immintrin.h>
+#define AHEAD 1
+#endif
+
 #include <iterator>
 #include <vector>
 using namespace std;
@@ -427,6 +432,24 @@ private:
       for (int ii=0; ii<(int) tempdirectneib.size(); ii++) {
         NeighbourManagerBase::range rng = tempdirectneib[ii] ;
         for (int i=rng.begin; i < rng.end; ++i) {
+#ifdef INTEL_INTRINSICS
+	  // We don't have access to the length of the partdata array.  Add a
+	  // parameter?  Or access this with
+	  //
+	  // #include "Hydrodynamics.h"
+          // using Hydrodynamics<ndim>::Nhydromax;
+	  // if (i+AHEAD < Nhydromax) {
+	  //
+	  // In the meantime, prefetch does not give a segmentation fault, so
+	  // don't test.
+	  _mm_prefetch(&partdata[i+AHEAD].flags, _MM_HINT_T1);
+	  // use a[0] to consistently use &
+	  _mm_prefetch(&partdata[i+AHEAD].a[0], _MM_HINT_T1);
+	  // Only up to here is needed for DensityParticle, but we don't know
+	  // that this is a DenistyParticle, so prefecth the parts needed by
+	  // HydroForcesParticle as well.
+	  _mm_prefetch(&partdata[i+AHEAD].hrangesqd, _MM_HINT_T1);
+#endif
           const InParticleType& part = partdata[i];
           // Forget immediately: direct particles and particles that do not interact gravitationally
           if (part.flags.is_dead()) continue;
@@ -449,6 +472,24 @@ private:
     for (int ii=0; ii<(int) tempperneib.size(); ii++) {
       NeighbourManagerBase::range rng = tempperneib[ii] ;
       for (int i=rng.begin; i < rng.end; ++i) {
+#ifdef INTEL_INTRINSICS
+	// We don't have access to the length of the partdata array.  Add a
+	// parameter?  Or access this with
+	//
+	// #include "Hydrodynamics.h"
+	// using Hydrodynamics<ndim>::Nhydromax;
+	// if (i+AHEAD < Nhydromax) {
+	//
+	// In the meantime, prefetch does not give a segmentation fault, so
+	// don't test.
+	_mm_prefetch(&partdata[i+AHEAD].flags, _MM_HINT_T1);
+	// use a[0] to consistently use &
+	_mm_prefetch(&partdata[i+AHEAD].a[0], _MM_HINT_T1);
+	// Only up to here is needed for DensityParticle, but we don't know
+	// that this is a DenistyParticle, so prefecth the parts needed by
+	// HydroForcesParticle as well.
+	_mm_prefetch(&partdata[i+AHEAD].hrangesqd, _MM_HINT_T1);
+#endif
         if (partdata[i].flags.is_dead()) continue;
 
         _AddParticleAndGhosts(GhostFinder, partdata[i], gather_only());
@@ -483,7 +524,24 @@ private:
     for (int ii=0; ii<(int) tempneib.size(); ii++) {
       NeighbourManagerBase::range rng = tempneib[ii] ;
       for (int i=rng.begin; i < rng.end; ++i) {
-
+#ifdef INTEL_INTRINSICS
+	// We don't have access to the length of the partdata array.  Add a
+	// parameter?  Or access this with
+	//
+	// #include "Hydrodynamics.h"
+	// using Hydrodynamics<ndim>::Nhydromax;
+	// if (i+AHEAD < Nhydromax) {
+	//
+	// In the meantime, prefetch does not give a segmentation fault, so
+	// don't test.
+	_mm_prefetch(&partdata[i+AHEAD].flags, _MM_HINT_T1);
+	// use a[0] to consistently use &
+	_mm_prefetch(&partdata[i+AHEAD].a[0], _MM_HINT_T1);
+	// Only up to here is needed for DensityParticle, but we don't know
+	// that this is a DenistyParticle, so prefecth the parts needed by
+	// HydroForcesParticle as well.
+	_mm_prefetch(&partdata[i+AHEAD].hrangesqd, _MM_HINT_T1);
+#endif
         for (int k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rc[k];
         drsqd = DotProduct(dr,dr,ndim);
         if (drsqd < hrangemaxsqd || _scatter_overlap(neibdata[Nneib], drsqd, rmax, gather_only())) {

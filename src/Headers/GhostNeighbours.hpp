@@ -378,6 +378,9 @@ private:
 		// Do reflections on the left edge
 		if (_need_mirror[k][0]){
 		  for (int n=0; n < Nghost; n++){
+		        // This looks wrong:  n starts at 0, i.e. the start of
+		        // ngbs, and nc starts at 1, i.e. the second element of
+		        // ngbs.
 			double rk = 2*_domain.min[k] - ngbs[n].r[k] ;
 			if (rk > _hbox.min[k]) {
               ngbs.push_back(ngbs[n+old_size]);

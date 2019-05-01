@@ -286,7 +286,8 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
 #ifdef INTEL_INTRINSICS
     if (cc+AHEAD < Ncell) {
       _mm_prefetch(&celldata[cc+AHEAD].bb, _MM_HINT_T1);
-      _mm_prefetch(&celldata[cc+AHEAD].hbox, _MM_HINT_T1);
+      _mm_prefetch(&celldata[cc+AHEAD].hbox, _MM_HINT_T1); // for ifirst and
+							   // ilast, used in AddNeibs
     }
 #endif
 
@@ -456,7 +457,8 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 #ifdef INTEL_INTRINSICS
     if (cc+AHEAD < Ncell) {
       _mm_prefetch(&celldata[cc+AHEAD].bb, _MM_HINT_T1);
-      _mm_prefetch(&celldata[cc+AHEAD].hbox, _MM_HINT_T1);
+      _mm_prefetch(&celldata[cc+AHEAD].hbox, _MM_HINT_T1); // and for ifirst and
+							   // ilast, used in AddNeibs
     }
 #endif
 
@@ -521,7 +523,8 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
 #ifdef INTEL_INTRINSICS
     if (cc+AHEAD < Ncell) {
       _mm_prefetch(&celldata[cc+AHEAD].bb, _MM_HINT_T1);
-      _mm_prefetch(&celldata[cc+AHEAD].hbox, _MM_HINT_T1);
+      _mm_prefetch(&celldata[cc+AHEAD].hbox, _MM_HINT_T1); // and for ifirst and
+							   // ilast, used in AddPeriodicNeibs
     }
 #endif
 
@@ -594,9 +597,19 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGravityInteractionAndGhostList
   //===============================================================================================
   while (cc < Ncell) {
 
+#ifdef INTEL_INTRINSICS
+    if (cc+AHEAD < Ncell) {
+      _mm_prefetch(&celldata[cc+AHEAD].bb, _MM_HINT_T1);
+      _mm_prefetch(&celldata[cc+AHEAD].hbox, _MM_HINT_T1); // for ifirst and
+							   // ilast and hmax
+      _mm_prefetch(&celldata[cc+AHEAD].r, _MM_HINT_T1); // for r, rmax, mac, m, cdistsqd
+      _mm_prefetch(&celldata[cc+AHEAD].q, _MM_HINT_T1); // for q
+    }
+#endif
+
     // Calculate closest periodic replica of cell
     FLOAT rcc[ndim];
-    celldata[cc].ComputeCellCentre(rcc);
+    celldata[cc].ComputeCellCentre(rcc); // Uses bb
     for (int k=0; k<ndim; k++) dr[k] = rcc[k] - rc[k];  //celldata[cc].rcell[k] - rc[k];
     GhostFinder.NearestPeriodicVector(dr);
     const FLOAT drsqd = DotProduct(dr, dr, ndim);

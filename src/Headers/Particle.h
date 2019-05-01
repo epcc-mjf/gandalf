@@ -26,6 +26,11 @@
 #define _PARTICLE_H_
 
 
+#include <type_traits>
+#define CACHE_LINE 0x40
+#define AVX512_LENGTH 0x40
+#define AVX_LENGTH 0x20
+
 #include "Parameters.h"
 #include "Precision.h"
 #include "Constants.h"
@@ -134,30 +139,40 @@ public:
 template <int ndim>
 struct Particle
 {
-  type_flag flags;                  ///< Particle flags (eg boundary/dead)
+  alignas(CACHE_LINE) type_flag flags; ///< Particle flags (eg boundary/dead)
   int ptype;                        ///< Particle type (gas/cdm/dust)
+  FLOAT m;                          ///< Particle mass
+  FLOAT r[ndim];                    ///< Position
+  FLOAT v[ndim];                    ///< Velocity
+  // 1 cache line
+  FLOAT a[ndim];                    ///< Total acceleration
+  FLOAT u;                          ///< Specific internal energy
+  FLOAT gpot;                       ///< Gravitational potential
+  // Up to here are used by DensityParticle
   int iorig;                        ///< Original particle i.d.
   int levelneib;                    ///< Min. timestep level of neighbours
   int level;                        ///< Current timestep level of particle
-  FLOAT r[ndim];                    ///< Position
-  FLOAT v[ndim];                    ///< Velocity
-  FLOAT a[ndim];                    ///< Total acceleration
-  FLOAT atree[ndim];                ///< Gravitational acceleration from the tree
-  FLOAT r0[ndim];                   ///< Position at beginning of step
-  FLOAT v0[ndim];                   ///< Velocity at beginning of step
-  FLOAT a0[ndim];                   ///< Acceleration at beginning of step
-  FLOAT m;                          ///< Particle mass
+  // Physical variables which only take a small dynamic range of values.  Can be
+  // stored in single precision to save space/memory.  And this pads to 4*4=2*8
+  // to match FLOAT(=double).
+  float sound;                      ///< Sound speed
   FLOAT h;                          ///< SPH smoothing length
-  FLOAT h_dust ;                    ///< Gas Smoothing length for dust
+  // 1 cache line
   FLOAT hrangesqd;                  ///< Kernel extent (squared)
   FLOAT hfactor;                    ///< invh^(ndim + 1)
   FLOAT rho;                        ///< Density
   FLOAT pressure;                   ///< Pressure
-  FLOAT u;                          ///< Specific internal energy
+  // Up to here are used by HydroForcesParticle
   FLOAT u0;                         ///< u at beginning of step
+  FLOAT atree[ndim];                ///< Gravitational acceleration from the tree
+  // 1 cache line
   FLOAT dudt0;                      ///< dudt at beginning of step
   FLOAT dudt;                       ///< Compressional heating rate
-  FLOAT gpot;                       ///< Gravitational potential
+  FLOAT r0[ndim];                   ///< Position at beginning of step
+  FLOAT v0[ndim];                   ///< Velocity at beginning of step
+  // 1 cache line
+  FLOAT a0[ndim];                   ///< Acceleration at beginning of step
+  FLOAT h_dust ;                    ///< Gas Smoothing length for dust
   FLOAT gpot_hydro;                 ///< Gravitaitonal potential w/o star
   FLOAT ueq;                        ///< equilibrium internal energy
   union {
@@ -170,7 +185,6 @@ struct Particle
   // Can be stored in single precision to save space/memory
   //-----------------------------------------------------------------------------------------------
   float mu_bar;                     ///< mean molecular weight
-  float sound;                      ///< Sound speed
   float vsig_max;                   ///< Maximum signal velocity.
 
   // To be deleted
@@ -237,10 +251,13 @@ struct Particle
 template <int ndim>
 struct SphParticle : public Particle<ndim>
 {
+  // These two just expose Particle r and v; they don't reserve any more memory
   using Particle<ndim>::r ;
   using Particle<ndim>::v ;
 
-  FLOAT div_v;                      ///< Velocity divergence
+  // HydroForcesParticle uses alpha and GradhSphParticle:: invomega and zeta, so
+  // attempt to have them all in one cache line.
+  alignas(CACHE_LINE) FLOAT div_v;  ///< Velocity divergence
   FLOAT alpha;                      ///< Artificial viscosity alpha value
   FLOAT dalphadt;                   ///< Rate of change of alpha
 
@@ -254,28 +271,29 @@ struct SphParticle : public Particle<ndim>
 
   class DensityParticle {
   public:
-    DensityParticle() : m(0), u(0), gpot(0), ptype(0) {} ;
+    DensityParticle() : ptype(0), m(0), u(0), gpot(0) {} ;
     DensityParticle(const SphParticle<ndim>&p) {
+      flags=p.flags;
+      ptype=p.ptype;
+      m = p.m;
       for (int i=0; i<ndim; i++) {
         r[i] = p.r[i];
         v[i] = p.v[i];
         a[i] = p.a[i];
       }
-      m = p.m;
       u = p.u;
       gpot=p.gpot;
-      ptype=p.ptype;
-      flags=p.flags;
     }
 
+    alignas(CACHE_LINE) type_flag flags;
+    int ptype;
+    FLOAT m;
     FLOAT r[ndim];
     FLOAT v[ndim];
+    // 1 cache line
     FLOAT a[ndim];
-    FLOAT m;
     FLOAT u;
     FLOAT gpot;
-    int ptype;
-    type_flag flags;
 
     static const int NDIM=ndim;
   };
@@ -293,6 +311,8 @@ struct SphParticle : public Particle<ndim>
 template <int ndim>
 struct GradhSphParticle : public SphParticle<ndim>
 {
+  // HydroForcesParticle uses SphParticle::alpha and invomega and zeta, so
+  // attempt to have them all in one cache line.
   FLOAT invomega;                   ///< grad-h omega/f correction term
   FLOAT zeta;                       ///< grad-h gravity correction term
   //FLOAT chi;                        ///< grad-h star-gravity correction term
@@ -348,24 +368,29 @@ struct GradhSphParticle : public SphParticle<ndim>
           zeta=p.zeta;
 	  }
 
+	  alignas(CACHE_LINE) type_flag flags;
 	  int ptype;
-	  int level;
-	  int levelneib;
-	  int iorig;
-	  type_flag flags;
+	  FLOAT m;
 	  FLOAT r[ndim];
 	  FLOAT v[ndim];
+          // 1 cache line
 	  FLOAT a[ndim];
-	  FLOAT m;
-	  FLOAT rho;
+	  FLOAT u;
+          // No gpot
+	  int iorig;
+	  int levelneib;
+	  int level;
+          // Insert padding?  Align?  Should sound be float, like in Particle?
+          // alignas(FLOAT)
+	  FLOAT sound;
 	  FLOAT h;
+          // 1 cache line
 	  FLOAT hrangesqd;
 	  FLOAT hfactor;
+	  FLOAT rho;
 	  FLOAT pressure;
-	  FLOAT invomega;
-	  FLOAT sound;
-	  FLOAT u;
 	  FLOAT alpha;
+	  FLOAT invomega;
 	  FLOAT zeta;
 	  static const int NDIM=ndim;
 
