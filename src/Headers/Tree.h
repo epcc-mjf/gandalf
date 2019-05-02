@@ -237,6 +237,12 @@ protected:
 	int Ncellmax;                        ///< Max. allowed no. of grid cells
 	int Ntotmax;                         ///< Max. no. of points in list
 	const bool IAmPruned;				 ///< Whether we are a pruned tree
+#ifdef INTEL_INTRINSICS
+        static const int AHEAD = 4;    /// Number of cells ahead to prefetch
+				       /// when traversing the tree (at least
+				       /// for the ComputeNeighbour...List
+				       /// functions).
+#endif
  public:
 
   Tree(int _Nleafmax, FLOAT _thetamaxsqd, FLOAT _kernrange, FLOAT _macerror,

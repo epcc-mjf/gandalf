@@ -12,7 +12,6 @@
 
 #ifdef INTEL_INTRINSICS
 #include <immintrin.h>
-#define AHEAD 1
 #endif
 
 #include <iterator>
@@ -233,6 +232,12 @@ private:
   typedef __boolean_constant<true>  _true_type ;
   typedef __boolean_constant<false> _false_type ;
 
+#ifdef INTEL_INTRINSICS
+  static const int AHEAD = 1;    /// Number of particles ahead to prefetch when
+                                 /// accessing the Particle array (at least for
+                                 /// the EndSearch functions).
+#endif
+
 public:
   using NeighbourManagerDim<ndim>::tempneib;
   using NeighbourManagerDim<ndim>::tempperneib;
@@ -442,6 +447,10 @@ private:
 	  //
 	  // In the meantime, prefetch does not give a segmentation fault, so
 	  // don't test.
+	  //
+	  // Properly this should be
+	  // _mm_prefetch(reinterpret_cast<char const*> &partdata[i+AHEAD].flags, _MM_HINT_T1);
+	  // but Intel 18 and onwards allow this without casting.
 	  _mm_prefetch(&partdata[i+AHEAD].flags, _MM_HINT_T1);
 	  // use a[0] to consistently use &
 	  _mm_prefetch(&partdata[i+AHEAD].a[0], _MM_HINT_T1);

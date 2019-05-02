@@ -56,8 +56,8 @@ struct TreeCellBase {
 #ifdef MPI_PARALLEL
   double worktot;                      ///< Total work in cell
 #endif
-  // Align c1 and c2 of KDTreeCell to a cache line (see KDTree.h) => 6 cache
-  // lines per TreeCell.
+  // Don't align c1 and c2 of KDTreeCell to a cache line (see KDTree.h) => 5
+  // cache lines per TreeCell.
 
   void ComputeCellCentre(FLOAT rc[ndim]) const {
     for (int k=0; k<ndim; k++) rc[k] = rcell(k);

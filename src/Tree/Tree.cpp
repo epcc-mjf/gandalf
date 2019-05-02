@@ -24,7 +24,6 @@
 
 #ifdef INTEL_INTRINSICS
 #include <immintrin.h>
-#define AHEAD 4
 #endif
 
 #include <cstdlib>
