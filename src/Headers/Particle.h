@@ -152,9 +152,8 @@ struct Particle
   int iorig;                        ///< Original particle i.d.
   int levelneib;                    ///< Min. timestep level of neighbours
   int level;                        ///< Current timestep level of particle
-  // Physical variables which only take a small dynamic range of values.  Can be
-  // stored in single precision to save space/memory.  And this pads to 4*4=2*8
-  // to match FLOAT(=double).
+  // sound is a physical variables which only takes a small dynamic range of
+  // values.  Can be stored in single precision to save space/memory.
   float sound;                      ///< Sound speed
   FLOAT h;                          ///< SPH smoothing length
   // 1 cache line
@@ -180,6 +179,7 @@ struct Particle
     FLOAT cooling;                  ///< Cooling rate, (-dudt_cool)
   };
   FLOAT dt_next;                   ///< Next time-step timestep
+  // 1 cache line
 
   // Physical variables which only take a small dynamic range of values.
   // Can be stored in single precision to save space/memory
@@ -193,7 +193,8 @@ struct Particle
   //int sinkid;                       ///< i.d. of sink particle
   FLOAT dt;                         ///< Particle timestep
   //FLOAT rad_pres[ndim];             ///< Acceleration from radiation pressure cmscott
-
+  // 3*8
+  
   Particle() {
     flags     = none;
     ptype     = gas_type;
@@ -255,9 +256,10 @@ struct SphParticle : public Particle<ndim>
   using Particle<ndim>::r ;
   using Particle<ndim>::v ;
 
-  // HydroForcesParticle uses alpha and GradhSphParticle:: invomega and zeta, so
-  // attempt to have them all in one cache line.
-  alignas(CACHE_LINE) FLOAT div_v;  ///< Velocity divergence
+  // HydroForcesParticle uses alpha and GradhSphParticle:: invomega and zeta.
+  // These will fit into one cache line with Particle:: mu_bar, vsig_max, nstep,
+  // nlast, dt (=4*4+1*8).
+  FLOAT div_v;                      ///< Velocity divergence
   FLOAT alpha;                      ///< Artificial viscosity alpha value
   FLOAT dalphadt;                   ///< Rate of change of alpha
 
