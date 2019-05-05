@@ -235,6 +235,10 @@ private:
 #ifdef INTEL_INTRINSICS
   static const int AHEAD_E = 1; /// Number of particles ahead to prefetch when
                                 /// accessing the Particle array for _EndSearch.
+  static const int AHEAD_T = 4; /// Number of particles ahead to prefetch when
+                                /// accessing the DensityParticle or
+                                /// HydroForcesParticle vectors for
+                                /// TrimNeighbourLists.
 #endif
 
 public:
@@ -561,6 +565,7 @@ private:
 
     _NCellDirectNeib = directlist.size();
     assert(neibdata.size() == (neiblist.size() + directlist.size()));
+
   }
 
 
@@ -590,8 +595,33 @@ private:
 
     // Go through the hydro neighbour candidates and check the distance. The ones that are not real neighbours
     // are demoted to the direct list
+    int imax = neibdata.size(); // Or can the compiler work out that the
+				// neibdata size is not changed in the loop?
     for (int j=0; j<(int) neiblist.size(); j++) {
       int i = neiblist[j];
+
+#ifdef INTEL_INTRINSICS
+      // This should properly look ahead only in neiblist, i.e.,
+      // int jmax = neiblist.size()
+      // ...
+      // if (j+AHEAD_T < jmax) {
+      // _mm_prefetch(&neibdata[neiblist[j+AHEAD_T]].flags, _MM_HINT_T1);
+      // _mm_prefetch(&neibdata[neiblist[j+AHEAD_T]].a[0], _MM_HINT_T1);
+      // }
+      // but that means an indirection, and may be slower than the few
+      // unnecessary prefetches looking ahead in neibdata.
+      if (i+AHEAD_T < imax) {
+	// Properly this should be
+	// _mm_prefetch(reinterpret_cast<char const*> &xxx, _MM_HINT_T1);
+	// but Intel 18 and onwards allow this without casting.
+	_mm_prefetch(&neibdata[i+AHEAD_T].flags, _MM_HINT_T1);
+	// use a[0] to consistently use &
+	_mm_prefetch(&neibdata[i+AHEAD_T].a[0], _MM_HINT_T1);
+	// This will give all of DensityParticle, and what we need of
+	// HydroForcesParticle.
+      }
+#endif
+
       ParticleType& neibpart = neibdata[i] ;
 
       // If do_pair_once is true then only get the neighbour for the first of the two times the
