@@ -159,7 +159,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 #ifdef MPI_PARALLEL
         mpighosttree->ComputeGatherNeighbourList(cell,sphdata,hmax,neibmanager);
 #endif
-        neibmanager.EndSearchGather(cell, sphdata);
+        neibmanager.EndSearchGather(cell, sphdata, sph->Nhydromax);
 
 
         // Loop over all active particles in the cell
@@ -305,7 +305,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
 
       neibmanager.set_target_cell(cell);
       tree->ComputeNeighbourAndGhostList(cell, neibmanager);
-      neibmanager.EndSearch(cell,sphdata);
+      neibmanager.EndSearch(cell,sphdata, sph->Nhydromax);
 
       // Loop over all active particles in the cell
       //-------------------------------------------------------------------------------------------
@@ -478,7 +478,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
       // Compute neighbour list for cell depending on physics options
       neibmanager.set_target_cell(cell);
       tree->ComputeGravityInteractionAndGhostList(cell, neibmanager);
-      neibmanager.EndSearchGravity(cell,sphdata);
+      neibmanager.EndSearchGravity(cell,sphdata, sph->Nhydromax);
 
       MultipoleMoment<ndim>* gravcell;
       int Ngravcell = neibmanager.GetGravCell(&gravcell);

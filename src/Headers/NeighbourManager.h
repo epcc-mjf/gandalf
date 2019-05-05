@@ -233,9 +233,8 @@ private:
   typedef __boolean_constant<false> _false_type ;
 
 #ifdef INTEL_INTRINSICS
-  static const int AHEAD = 1;    /// Number of particles ahead to prefetch when
-                                 /// accessing the Particle array (at least for
-                                 /// the EndSearch functions).
+  static const int AHEAD_E = 1; /// Number of particles ahead to prefetch when
+                                /// accessing the Particle array for _EndSearch.
 #endif
 
 public:
@@ -273,8 +272,8 @@ public:
   ///        not interact with the cell hydrodynamically
   //===============================================================================================
   template<class InParticleType>
-  void EndSearch(const TreeCellBase<ndim> &cell, const InParticleType* partdata) {
-    _EndSearch<InParticleType,_false_type>(cell, partdata, false);
+  void EndSearch(const TreeCellBase<ndim> &cell, const InParticleType* partdata, const int Npartmax) {
+    _EndSearch<InParticleType,_false_type>(cell, partdata, Npartmax, false);
   }
 
   //===============================================================================================
@@ -283,8 +282,8 @@ public:
   ///        not contribute to the density
   //===============================================================================================
   template<class InParticleType>
-  void EndSearchGather(const TreeCellBase<ndim> &cell, const InParticleType* partdata) {
-    _EndSearch<InParticleType,_true_type>(cell, partdata, false);
+  void EndSearchGather(const TreeCellBase<ndim> &cell, const InParticleType* partdata, const int Npartmax) {
+    _EndSearch<InParticleType,_true_type>(cell, partdata, Npartmax, false);
   }
   //===============================================================================================
   // EndSearchGravity
@@ -292,8 +291,8 @@ public:
   ///        interact hydrodynamically to the directlist.
   //===============================================================================================
   template<class InParticleType>
-  void EndSearchGravity(const TreeCellBase<ndim> &cell, const InParticleType* partdata) {
-    _EndSearch<InParticleType,_false_type>(cell, partdata, true);
+  void EndSearchGravity(const TreeCellBase<ndim> &cell, const InParticleType* partdata, const int Npartmax) {
+    _EndSearch<InParticleType,_false_type>(cell, partdata, Npartmax, true);
   }
 
   //===============================================================================================
@@ -404,7 +403,7 @@ private:
   ///          otherwise they are discarded. Periodic corrections are included.
   //===============================================================================================
   template<class InParticleType, class gather_only>
-  void _EndSearch(const TreeCellBase<ndim> &cell, const InParticleType* partdata,
+  void _EndSearch(const TreeCellBase<ndim> &cell, const InParticleType* partdata, const int Npartmax,
                   bool keep_direct=true) {
 
     assert(partdata != NULL);
@@ -429,7 +428,6 @@ private:
     assert(neibdata.size()==0);
     assert(directlist.size()==0);
 
-
     // Now load the particles
 
     // Start from direct neighbours
@@ -438,26 +436,18 @@ private:
         NeighbourManagerBase::range rng = tempdirectneib[ii] ;
         for (int i=rng.begin; i < rng.end; ++i) {
 #ifdef INTEL_INTRINSICS
-	  // We don't have access to the length of the partdata array.  Add a
-	  // parameter?  Or access this with
-	  //
-	  // #include "Hydrodynamics.h"
-          // using Hydrodynamics<ndim>::Nhydromax;
-	  // if (i+AHEAD < Nhydromax) {
-	  //
-	  // In the meantime, prefetch does not give a segmentation fault, so
-	  // don't test.
-	  //
-	  // Properly this should be
-	  // _mm_prefetch(reinterpret_cast<char const*> &partdata[i+AHEAD].flags, _MM_HINT_T1);
-	  // but Intel 18 and onwards allow this without casting.
-	  _mm_prefetch(&partdata[i+AHEAD].flags, _MM_HINT_T1);
-	  // use a[0] to consistently use &
-	  _mm_prefetch(&partdata[i+AHEAD].a[0], _MM_HINT_T1);
-	  // Only up to here is needed for DensityParticle, but we don't know
-	  // that this is a DenistyParticle, so prefecth the parts needed by
-	  // HydroForcesParticle as well.
-	  _mm_prefetch(&partdata[i+AHEAD].hrangesqd, _MM_HINT_T1);
+	  if (i+AHEAD_E < Npartmax) {
+	    // Properly this should be
+	    // _mm_prefetch(reinterpret_cast<char const*> &partdata[i+AHEAD_E].flags, _MM_HINT_T1);
+	    // but Intel 18 and onwards allow this without casting.
+	    _mm_prefetch(&partdata[i+AHEAD_E].flags, _MM_HINT_T1);
+	    // use a[0] to consistently use &
+	    _mm_prefetch(&partdata[i+AHEAD_E].a[0], _MM_HINT_T1);
+	    // Only up to here is needed for DensityParticle, but we don't know
+	    // that this is a DenistyParticle, so prefecth the parts needed by
+	    // HydroForcesParticle as well.
+	    _mm_prefetch(&partdata[i+AHEAD_E].hrangesqd, _MM_HINT_T1);
+	  }
 #endif
           const InParticleType& part = partdata[i];
           // Forget immediately: direct particles and particles that do not interact gravitationally
@@ -482,22 +472,18 @@ private:
       NeighbourManagerBase::range rng = tempperneib[ii] ;
       for (int i=rng.begin; i < rng.end; ++i) {
 #ifdef INTEL_INTRINSICS
-	// We don't have access to the length of the partdata array.  Add a
-	// parameter?  Or access this with
-	//
-	// #include "Hydrodynamics.h"
-	// using Hydrodynamics<ndim>::Nhydromax;
-	// if (i+AHEAD < Nhydromax) {
-	//
-	// In the meantime, prefetch does not give a segmentation fault, so
-	// don't test.
-	_mm_prefetch(&partdata[i+AHEAD].flags, _MM_HINT_T1);
-	// use a[0] to consistently use &
-	_mm_prefetch(&partdata[i+AHEAD].a[0], _MM_HINT_T1);
-	// Only up to here is needed for DensityParticle, but we don't know
-	// that this is a DenistyParticle, so prefecth the parts needed by
-	// HydroForcesParticle as well.
-	_mm_prefetch(&partdata[i+AHEAD].hrangesqd, _MM_HINT_T1);
+	if (i+AHEAD_E < Npartmax) {
+	  // Properly this should be
+	  // _mm_prefetch(reinterpret_cast<char const*> &partdata[i+AHEAD_E].flags, _MM_HINT_T1);
+	  // but Intel 18 and onwards allow this without casting.
+	  _mm_prefetch(&partdata[i+AHEAD_E].flags, _MM_HINT_T1);
+	  // use a[0] to consistently use &
+	  _mm_prefetch(&partdata[i+AHEAD_E].a[0], _MM_HINT_T1);
+	  // Only up to here is needed for DensityParticle, but we don't know
+	  // that this is a DenistyParticle, so prefecth the parts needed by
+	  // HydroForcesParticle as well.
+	  _mm_prefetch(&partdata[i+AHEAD_E].hrangesqd, _MM_HINT_T1);
+	}
 #endif
         if (partdata[i].flags.is_dead()) continue;
 
@@ -534,30 +520,35 @@ private:
       NeighbourManagerBase::range rng = tempneib[ii] ;
       for (int i=rng.begin; i < rng.end; ++i) {
 #ifdef INTEL_INTRINSICS
-	// We don't have access to the length of the partdata array.  Add a
-	// parameter?  Or access this with
-	//
-	// #include "Hydrodynamics.h"
-	// using Hydrodynamics<ndim>::Nhydromax;
-	// if (i+AHEAD < Nhydromax) {
-	//
-	// In the meantime, prefetch does not give a segmentation fault, so
-	// don't test.
-	_mm_prefetch(&partdata[i+AHEAD].flags, _MM_HINT_T1);
-	// use a[0] to consistently use &
-	_mm_prefetch(&partdata[i+AHEAD].a[0], _MM_HINT_T1);
-	// Only up to here is needed for DensityParticle, but we don't know
-	// that this is a DenistyParticle, so prefecth the parts needed by
-	// HydroForcesParticle as well.
-	_mm_prefetch(&partdata[i+AHEAD].hrangesqd, _MM_HINT_T1);
+	if (i+AHEAD_E < Npartmax) {
+	  // Properly this should be
+	  // _mm_prefetch(reinterpret_cast<char const*> &partdata[i+AHEAD_E].flags, _MM_HINT_T1);
+	  // but Intel 18 and onwards allow this without casting.
+	  _mm_prefetch(&partdata[i+AHEAD_E].flags, _MM_HINT_T1);
+	  // use a[0] to consistently use &
+	  _mm_prefetch(&partdata[i+AHEAD_E].a[0], _MM_HINT_T1);
+	  // Only up to here is needed for DensityParticle, but we don't know
+	  // that this is a DenistyParticle, so prefecth the parts needed by
+	  // HydroForcesParticle as well.
+	  _mm_prefetch(&partdata[i+AHEAD_E].hrangesqd, _MM_HINT_T1);
+	}
 #endif
         for (int k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rc[k];
         drsqd = DotProduct(dr,dr,ndim);
+	// This looks wrong.  Nneib is neibdata.size(), and neibdata[Nneib] will
+	// not have any data until partdata[i] is pushed.  (And a
+	// DensityParticle does not have an h.)  But here gather_only() is true,
+	// and _scatter_overlap does nothing.  Should be
+	//        if (drsqd < hrangemaxsqd || _scatter_overlap(partdata[i], drsqd, rmax, gather_only())) {
+	// or omit the test
+	//        if (drsqd < hrangemaxsqd) {
         if (drsqd < hrangemaxsqd || _scatter_overlap(neibdata[Nneib], drsqd, rmax, gather_only())) {
           neibdata.push_back(partdata[i]);
           neiblist.push_back(Nneib);
           neib_idx.push_back(i);
           Nneib++;
+	// This looks wrong also and should be
+	//        } else if (keep_direct && gravmask[partdata[i].ptype]) {
         } else if (keep_direct && gravmask[neibdata[Nneib].ptype]) {
           // Hydro candidates that fail the test get demoted to direct neighbours
           neibdata.push_back(partdata[i]);
@@ -609,6 +600,7 @@ private:
       // Compute relative position and distance quantities for pair
       for (int k=0; k<ndim; k++) draux[k] = neibpart.r[k] - rp[k];
       if (j < _NPeriodicGhosts)
+	//  This changes neibpart.r - is that correct?
         GhostFinder.ApplyPeriodicDistanceCorrection(neibpart.r, draux);
 
       const FLOAT drsqd = DotProduct(draux,draux,ndim);

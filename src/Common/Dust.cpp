@@ -515,7 +515,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoInterp
 #ifdef MPI_PARALLEL
         mpighosttree->ComputeGatherNeighbourList(cell,sphdata,hmax,neibmanager);
 #endif
-        neibmanager.EndSearchGather(cell, sphdata);
+        neibmanager.EndSearchGather(cell, sphdata, hydro->Nhydromax);
 
 
         // Loop over all active particles in the cell
@@ -687,7 +687,7 @@ void DustSphNgbFinder<ndim, ParticleType>::FindNeibAndDoForces
         // Ghosts are already in the mpi tree
         mpighosttree->ComputeNeighbourList(cell, neibmanager);
 #endif
-        neibmanager.EndSearch(cell,sphdata);
+        neibmanager.EndSearch(cell,sphdata, hydro->Nhydromax);
 
         // Initialize the change in energy
         for (j=0; j<Nactive; j++)
