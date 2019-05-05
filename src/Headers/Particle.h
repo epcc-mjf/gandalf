@@ -194,7 +194,7 @@ struct Particle
   FLOAT dt;                         ///< Particle timestep
   //FLOAT rad_pres[ndim];             ///< Acceleration from radiation pressure cmscott
   // 3*8
-  
+
   Particle() {
     flags     = none;
     ptype     = gas_type;

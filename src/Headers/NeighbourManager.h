@@ -233,12 +233,14 @@ private:
   typedef __boolean_constant<false> _false_type ;
 
 #ifdef INTEL_INTRINSICS
-  static const int AHEAD_E = 1; /// Number of particles ahead to prefetch when
+  static const int AHEAD_E = 0; /// Number of particles ahead to prefetch when
                                 /// accessing the Particle array for _EndSearch.
-  static const int AHEAD_T = 4; /// Number of particles ahead to prefetch when
+                                /// 0 switches off prefetching.
+  static const int AHEAD_T = 0; /// Number of particles ahead to prefetch when
                                 /// accessing the DensityParticle or
                                 /// HydroForcesParticle vectors for
-                                /// TrimNeighbourLists.
+                                /// TrimNeighbourLists.  0 switches off
+                                /// prefetching.
 #endif
 
 public:
@@ -440,17 +442,19 @@ private:
         NeighbourManagerBase::range rng = tempdirectneib[ii] ;
         for (int i=rng.begin; i < rng.end; ++i) {
 #ifdef INTEL_INTRINSICS
-	  if (i+AHEAD_E < Npartmax) {
-	    // Properly this should be
-	    // _mm_prefetch(reinterpret_cast<char const*> &partdata[i+AHEAD_E].flags, _MM_HINT_T1);
-	    // but Intel 18 and onwards allow this without casting.
-	    _mm_prefetch(&partdata[i+AHEAD_E].flags, _MM_HINT_T1);
-	    // use a[0] to consistently use &
-	    _mm_prefetch(&partdata[i+AHEAD_E].a[0], _MM_HINT_T1);
-	    // Only up to here is needed for DensityParticle, but we don't know
-	    // that this is a DenistyParticle, so prefecth the parts needed by
-	    // HydroForcesParticle as well.
-	    _mm_prefetch(&partdata[i+AHEAD_E].hrangesqd, _MM_HINT_T1);
+	  if (AHEAD_E != 0) {
+	    if (i+AHEAD_E < Npartmax) {
+	      // Properly this should be
+	      // _mm_prefetch(reinterpret_cast<char const*> &partdata[i+AHEAD_E].flags, _MM_HINT_T1);
+	      // but Intel 18 and onwards allow this without casting.
+	      _mm_prefetch(&partdata[i+AHEAD_E].flags, _MM_HINT_T1);
+	      // use a[0] to consistently use &
+	      _mm_prefetch(&partdata[i+AHEAD_E].a[0], _MM_HINT_T1);
+	      // Only up to here is needed for DensityParticle, but we don't
+	      // know that this is a DensityParticle, so prefetch the parts
+	      // needed by HydroForcesParticle as well.
+	      _mm_prefetch(&partdata[i+AHEAD_E].hrangesqd, _MM_HINT_T1);
+	    }
 	  }
 #endif
           const InParticleType& part = partdata[i];
@@ -476,17 +480,19 @@ private:
       NeighbourManagerBase::range rng = tempperneib[ii] ;
       for (int i=rng.begin; i < rng.end; ++i) {
 #ifdef INTEL_INTRINSICS
-	if (i+AHEAD_E < Npartmax) {
-	  // Properly this should be
-	  // _mm_prefetch(reinterpret_cast<char const*> &partdata[i+AHEAD_E].flags, _MM_HINT_T1);
-	  // but Intel 18 and onwards allow this without casting.
-	  _mm_prefetch(&partdata[i+AHEAD_E].flags, _MM_HINT_T1);
-	  // use a[0] to consistently use &
-	  _mm_prefetch(&partdata[i+AHEAD_E].a[0], _MM_HINT_T1);
-	  // Only up to here is needed for DensityParticle, but we don't know
-	  // that this is a DenistyParticle, so prefecth the parts needed by
-	  // HydroForcesParticle as well.
-	  _mm_prefetch(&partdata[i+AHEAD_E].hrangesqd, _MM_HINT_T1);
+	if (AHEAD_E != 0) {
+	  if (i+AHEAD_E < Npartmax) {
+	    // Properly this should be
+	    // _mm_prefetch(reinterpret_cast<char const*> &partdata[i+AHEAD_E].flags, _MM_HINT_T1);
+	    // but Intel 18 and onwards allow this without casting.
+	    _mm_prefetch(&partdata[i+AHEAD_E].flags, _MM_HINT_T1);
+	    // use a[0] to consistently use &
+	    _mm_prefetch(&partdata[i+AHEAD_E].a[0], _MM_HINT_T1);
+	    // Only up to here is needed for DensityParticle, but we don't know
+	    // that this is a DensityParticle, so prefetch the parts needed by
+	    // HydroForcesParticle as well.
+	    _mm_prefetch(&partdata[i+AHEAD_E].hrangesqd, _MM_HINT_T1);
+	  }
 	}
 #endif
         if (partdata[i].flags.is_dead()) continue;
@@ -524,17 +530,19 @@ private:
       NeighbourManagerBase::range rng = tempneib[ii] ;
       for (int i=rng.begin; i < rng.end; ++i) {
 #ifdef INTEL_INTRINSICS
-	if (i+AHEAD_E < Npartmax) {
-	  // Properly this should be
-	  // _mm_prefetch(reinterpret_cast<char const*> &partdata[i+AHEAD_E].flags, _MM_HINT_T1);
-	  // but Intel 18 and onwards allow this without casting.
-	  _mm_prefetch(&partdata[i+AHEAD_E].flags, _MM_HINT_T1);
-	  // use a[0] to consistently use &
-	  _mm_prefetch(&partdata[i+AHEAD_E].a[0], _MM_HINT_T1);
-	  // Only up to here is needed for DensityParticle, but we don't know
-	  // that this is a DenistyParticle, so prefecth the parts needed by
-	  // HydroForcesParticle as well.
-	  _mm_prefetch(&partdata[i+AHEAD_E].hrangesqd, _MM_HINT_T1);
+	if (AHEAD_E != 0) {
+	  if (i+AHEAD_E < Npartmax) {
+	    // Properly this should be
+	    // _mm_prefetch(reinterpret_cast<char const*> &partdata[i+AHEAD_E].flags, _MM_HINT_T1);
+	    // but Intel 18 and onwards allow this without casting.
+	    _mm_prefetch(&partdata[i+AHEAD_E].flags, _MM_HINT_T1);
+	    // use a[0] to consistently use &
+	    _mm_prefetch(&partdata[i+AHEAD_E].a[0], _MM_HINT_T1);
+	    // Only up to here is needed for DensityParticle, but we don't know
+	    // that this is a DensityParticle, so prefetch the parts needed by
+	    // HydroForcesParticle as well.
+	    _mm_prefetch(&partdata[i+AHEAD_E].hrangesqd, _MM_HINT_T1);
+	  }
 	}
 #endif
         for (int k=0; k<ndim; k++) dr[k] = partdata[i].r[k] - rc[k];
@@ -565,7 +573,6 @@ private:
 
     _NCellDirectNeib = directlist.size();
     assert(neibdata.size() == (neiblist.size() + directlist.size()));
-
   }
 
 
@@ -599,29 +606,29 @@ private:
 				// neibdata size is not changed in the loop?
     for (int j=0; j<(int) neiblist.size(); j++) {
       int i = neiblist[j];
-
 #ifdef INTEL_INTRINSICS
-      // This should properly look ahead only in neiblist, i.e.,
-      // int jmax = neiblist.size()
-      // ...
-      // if (j+AHEAD_T < jmax) {
-      // _mm_prefetch(&neibdata[neiblist[j+AHEAD_T]].flags, _MM_HINT_T1);
-      // _mm_prefetch(&neibdata[neiblist[j+AHEAD_T]].a[0], _MM_HINT_T1);
-      // }
-      // but that means an indirection, and may be slower than the few
-      // unnecessary prefetches looking ahead in neibdata.
-      if (i+AHEAD_T < imax) {
-	// Properly this should be
-	// _mm_prefetch(reinterpret_cast<char const*> &xxx, _MM_HINT_T1);
-	// but Intel 18 and onwards allow this without casting.
-	_mm_prefetch(&neibdata[i+AHEAD_T].flags, _MM_HINT_T1);
-	// use a[0] to consistently use &
-	_mm_prefetch(&neibdata[i+AHEAD_T].a[0], _MM_HINT_T1);
-	// This will give all of DensityParticle, and what we need of
-	// HydroForcesParticle.
+      if (AHEAD_T != 0) {
+	// This should properly look ahead only in neiblist, i.e.,
+	// int jmax = neiblist.size()
+	// ...
+	// if (j+AHEAD_T < jmax) {
+	// _mm_prefetch(&neibdata[neiblist[j+AHEAD_T]].flags, _MM_HINT_T1);
+	// _mm_prefetch(&neibdata[neiblist[j+AHEAD_T]].a[0], _MM_HINT_T1);
+	// }
+	// but that means an indirection, and may be slower than the few
+	// unnecessary prefetches looking ahead in neibdata.
+	if (i+AHEAD_T < imax) {
+	  // Properly this should be
+	  // _mm_prefetch(reinterpret_cast<char const*> &xxx, _MM_HINT_T1);
+	  // but Intel 18 and onwards allow this without casting.
+	  _mm_prefetch(&neibdata[i+AHEAD_T].flags, _MM_HINT_T1);
+	  // use a[0] to consistently use &
+	  _mm_prefetch(&neibdata[i+AHEAD_T].a[0], _MM_HINT_T1);
+	  // This will give all of DensityParticle, and what we need of
+	  // HydroForcesParticle.
+	}
       }
 #endif
-
       ParticleType& neibpart = neibdata[i] ;
 
       // If do_pair_once is true then only get the neighbour for the first of the two times the
