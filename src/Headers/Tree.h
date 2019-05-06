@@ -238,10 +238,11 @@ protected:
 	int Ntotmax;                         ///< Max. no. of points in list
 	const bool IAmPruned;				 ///< Whether we are a pruned tree
 #ifdef INTEL_INTRINSICS
-        static const int AHEAD = 4;    /// Number of cells ahead to prefetch
+        static const int AHEAD = 3;    /// Number of cells ahead to prefetch
 				       /// when traversing the tree (at least
 				       /// for the ComputeNeighbour...List
-				       /// functions).
+				       /// functions). 0 to switch off
+				       /// prefetching.
 #endif
  public:
 
