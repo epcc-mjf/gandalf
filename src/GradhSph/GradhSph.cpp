@@ -162,8 +162,18 @@ int GradhSph<ndim, kernelclass>::ComputeH
   // If there are sink particles present, check if the particle is inside one.
   // If so, then adjust the iteration bounds and ensure they are valid (i.e. hmax is large enough)
   if (sink_particles) {
-    h_lower_bound = h_fac*pow(parti.m/this->rho_sink, Sph<ndim>::invndim);
-    if (hmax < h_lower_bound) return -1;
+    // This makes hmax far too large.
+    // h_lower_bound = h_fac*pow(parti.m/this->rho_sink, Sph<ndim>::invndim);
+    // The not-OK return value is 0.
+    // if (hmax < h_lower_bound) return -1;
+    // The above two lines mean that with sink particles, ComputeH is not
+    // executed, and h is always too big (the initial value).
+    //
+    // This looks correct.  This could be done in the calling routine.
+    if (parti.flags.check(inside_sink)) {
+      h_lower_bound = hmin_sink;
+      if (hmax < h_lower_bound) return 0;
+    }
   }
 
   int Nneib = ngbs.size();
@@ -316,7 +326,9 @@ int GradhSph<ndim, kernelclass>::ComputeH
 
   // If h is invalid (i.e. larger than maximum h), then return error code (0)
   if (parti.h <= hmax) return 1;
-  else return -1;
+  // The not-OK return value is zero.
+  // else return -1;
+  else return 0;
 }
 
 
