@@ -163,6 +163,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
   // If so, then adjust the iteration bounds and ensure they are valid (i.e. hmax is large enough)
   if (sink_particles) {
     h_lower_bound = h_fac*pow(parti.m/this->rho_sink, Sph<ndim>::invndim);
+    cout << "hmax h_lower_bound:  " << hmax << "  " << h_lower_bound << endl;
     if (hmax < h_lower_bound) return -1;
   }
 

@@ -22,6 +22,7 @@
 //=================================================================================================
 
 #include <cstdlib>
+#include <iostream>
 #include <cmath>
 #include "Precision.h"
 #include "Debug.h"
@@ -236,6 +237,7 @@ void DiscIc<ndim>::Generate(void)
   for (int k=0; k<ndim; k++) star.v[k] = (FLOAT) 0.0;
   star.m = Mstar;
   star.h = rin/hydro->kernp->kernrange;
+  cout << "star.h = " << star.h << endl;
 
   // Set up the planet
   if (simparams->intparams["DiscIcPlanet"] == 1) {
@@ -247,6 +249,7 @@ void DiscIc<ndim>::Generate(void)
     planet.m = simunits.m.Output_to_CodeUnits(simparams->floatparams["DiscIcPlanetMass"]);
     planet.h = simparams->floatparams["DiscIcPlanetAccretionRadiusHill"]*
         rp*pow(simparams->floatparams["DiscIcPlanetMass"]/3.,1./3)/hydro->kernp->kernrange;
+    cout << "planet.h = " << planet.h << endl;
 
     const FLOAT Omega0 = std::sqrt(star.m + planet.m);
 
