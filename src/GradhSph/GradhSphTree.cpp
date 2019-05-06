@@ -104,6 +104,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
   // Find list of all cells that contain active particles
   cactive = tree->ComputeActiveCellList(celllist);
   assert(cactive <= tree->gtot);
+  cout << "Ncell  cactive = " << tree->Ncell << "  " << cactive << endl;
 
   // If there are no active cells, return to main loop
   if (cactive == 0) return;
@@ -139,6 +140,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
       celldone = 1;
       hmax = cell.hmax;
 
+      cout << "active cell = " << cc << endl;
 
       // If hmax is too small so the neighbour lists are invalid, make hmax
       // larger and then recompute for the current active cell.
@@ -150,6 +152,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 
         // Find list of active particles in current cell
         Nactive = tree->ComputeActiveParticleList(cell, sphdata, activelist);
+        cout << "Nactive = " << Nactive << endl;
         for (j=0; j<Nactive; j++) activepart[j] = sphdata[activelist[j]];
 
         // Compute neighbour list for cell from particles on all trees

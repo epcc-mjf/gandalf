@@ -278,6 +278,8 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   for (int k=0; k<ndim; k++) gatherbox.min[k] = cell.bb.min[k] - kernrange*hmax;
   for (int k=0; k<ndim; k++) gatherbox.max[k] = cell.bb.max[k] + kernrange*hmax;
 
+  int Nsearched = 0;
+  int Nkept = 0;
 
   //===============================================================================================
   while (cc < Ncell) {
@@ -289,6 +291,8 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
 							   // ilast, used in AddNeibs
     }
 #endif
+
+    Nsearched++;
 
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
@@ -306,6 +310,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1) {
+	Nkept++;
         neibmanager.AddNeibs(celldata[cc]);
         cc = celldata[cc].cnext;
       }
@@ -318,6 +323,8 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
     }
 
   };
+
+  cout << "cells searched kept:  " << Nsearched << "  " << Nkept << endl;
   //===============================================================================================
 }
 
@@ -450,6 +457,9 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 
   int cc = 0;                          // Cell counter
 
+  int Nsearched = 0;
+  int Nkept = 0;
+
   //===============================================================================================
   while (cc < Ncell) {
 
@@ -460,6 +470,8 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 							   // ilast, used in AddNeibs
     }
 #endif
+
+    Nsearched++;
 
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
@@ -478,6 +490,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1) {
+	Nkept++;
         neibmanager.AddNeibs(celldata[cc]) ;
         cc = celldata[cc].cnext;
       }
@@ -492,6 +505,8 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
     }
 
   };
+
+  cout << "cells searched kept:  " << Nsearched << "  " << Nkept << endl;
   //===============================================================================================
 
 }
@@ -515,6 +530,9 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
   // Start with root cell and walk through entire tree
   int cc = 0;                          // Cell counter
 
+  int Nsearched = 0;
+  int Nkept = 0;
+
   // Walk through all cells in tree to determine particle and cell interaction lists
   //===============================================================================================
   while (cc < Ncell) {
@@ -526,6 +544,8 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
 							   // ilast, used in AddPeriodicNeibs
     }
 #endif
+
+    Nsearched++;
 
     // Check if bounding boxes overlap with each other (for potential SPH neibs)
     //---------------------------------------------------------------------------------------------
@@ -544,6 +564,7 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1) {
+	Nkept++;
         neibmanager.AddPeriodicNeibs(celldata[cc]) ;
         cc = celldata[cc].cnext;
       }
@@ -558,6 +579,8 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
     }
 
   };
+
+  cout << "cells searched kept:  " << Nsearched << "  " << Nkept << endl;
   //===============================================================================================
 
 

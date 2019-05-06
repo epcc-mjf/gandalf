@@ -432,6 +432,7 @@ void SimulationBase::Run
 #endif
 #endif
 #endif
+    cout << "MainLoop()" << endl;
     MainLoop();
 #ifdef MEASURE
     ANNOTATE_DISABLE_COLLECTION_PUSH; // Advisor

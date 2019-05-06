@@ -10,6 +10,7 @@
 #define NEIGHBOURMANAGER_H_
 
 
+#include <iostream>
 #ifdef INTEL_INTRINSICS
 #include <immintrin.h>
 #endif
@@ -436,10 +437,13 @@ private:
 
     // Now load the particles
 
+    int Npartd = 0, Npartp = 0, Npart = 0;
+
     // Start from direct neighbours
     if (keep_direct) {
       for (int ii=0; ii<(int) tempdirectneib.size(); ii++) {
         NeighbourManagerBase::range rng = tempdirectneib[ii] ;
+	Npartd += rng.end - rng.begin;
         for (int i=rng.begin; i < rng.end; ++i) {
 #ifdef INTEL_INTRINSICS
 	  if (AHEAD_E != 0) {
@@ -464,6 +468,9 @@ private:
 
           // Now create the particle / ghosts
           _AddParticleAndGhosts(GhostFinder, part, gather_only());
+	  // This is wrong - if there are mirror BCs there can be more than one
+	  // particle added to neibdata.  There needs to be a loop like the one
+	  // below.
           directlist.push_back(neibdata.size()-1);
           neib_idx.push_back(i);
         }
@@ -478,6 +485,7 @@ private:
     int Nneib = directlist.size();
     for (int ii=0; ii<(int) tempperneib.size(); ii++) {
       NeighbourManagerBase::range rng = tempperneib[ii] ;
+      Npartp += rng.end - rng.begin;
       for (int i=rng.begin; i < rng.end; ++i) {
 #ifdef INTEL_INTRINSICS
 	if (AHEAD_E != 0) {
@@ -528,6 +536,7 @@ private:
     // Find those particles that do not need ghosts on the fly
     for (int ii=0; ii<(int) tempneib.size(); ii++) {
       NeighbourManagerBase::range rng = tempneib[ii] ;
+      Npart += rng.end - rng.begin;
       for (int i=rng.begin; i < rng.end; ++i) {
 #ifdef INTEL_INTRINSICS
 	if (AHEAD_E != 0) {
@@ -573,6 +582,13 @@ private:
 
     _NCellDirectNeib = directlist.size();
     assert(neibdata.size() == (neiblist.size() + directlist.size()));
+
+    cout << "Npartd directlist.size():  " << Npartd << "  " << directlist.size() << endl;
+    cout << "Npartp _NPeriodicGhosts:  " << Npartp << "  " << _NPeriodicGhosts << endl;
+    cout << "Npart neiblist.size() neibdata.size():  "
+	 << Npart << "  " << neiblist.size() << " " << neibdata.size() << endl;
+    cout << "p+d+o Nneib GetNumAllNeib:  "
+	 << Npartd+Npartp+Npart << "  " << Nneib << "  " << GetNumAllNeib() << endl;
   }
 
 
@@ -668,6 +684,9 @@ private:
         }
       }
     }
+    cout << "_NCellDirectNeib directlist.size():  " << _NCellDirectNeib << "  " << directlist.size() << endl;
+    cout << "neiblist.size() culled_neiblist.size():  " << neiblist.size() << "  " << culled_neiblist.size() << endl;
+    cout << "smoothgravlist.size():  " << smoothgravlist.size() << endl;
   }
 
   template<class InParticleType>
