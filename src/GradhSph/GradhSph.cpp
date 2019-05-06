@@ -169,7 +169,8 @@ int GradhSph<ndim, kernelclass>::ComputeH
     // The above two lines mean that with sink particles, ComputeH is not
     // executed, and h is always too big (the initial value).
     //
-    // This looks correct.  This could be done in the calling routine.
+    // This looks correct.  The check can be also done earlier, in the calling
+    // routine.
     if (parti.flags.check(inside_sink)) {
       h_lower_bound = hmin_sink;
       if (hmax < h_lower_bound) return 0;

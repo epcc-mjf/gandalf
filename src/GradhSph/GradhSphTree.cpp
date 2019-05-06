@@ -144,13 +144,24 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
       // larger and then recompute for the current active cell.
       //-------------------------------------------------------------------------------------------
       do {
-        hmax = (FLOAT) 1.05*hmax;
-        cell.hmax = hmax;
-        celldone = 1;
-
         // Find list of active particles in current cell
         Nactive = tree->ComputeActiveParticleList(cell, sphdata, activelist);
         for (j=0; j<Nactive; j++) activepart[j] = sphdata[activelist[j]];
+
+	// If there are sink particles present, check if any particle is inside
+	// one.  If so, then ensure hmax is large enough.
+	if (sph->sink_particles && hmax < sph->hmin_sink) {
+	  for (j=0; j<Nactive; j++) {
+	    if (activepart[j].flags.check(inside_sink)) {
+	      hmax = sph->hmin_sink;
+	      break;
+	    }
+	  }
+	}
+	
+        hmax = (FLOAT) 1.05*hmax;
+        cell.hmax = hmax;
+        celldone = 1;
 
         // Compute neighbour list for cell from particles on all trees
         neibmanager.set_target_cell(cell);
