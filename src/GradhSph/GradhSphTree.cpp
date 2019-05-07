@@ -158,7 +158,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 	    }
 	  }
 	}
-	
+
         hmax = (FLOAT) 1.05*hmax;
         cell.hmax = hmax;
         celldone = 1;
