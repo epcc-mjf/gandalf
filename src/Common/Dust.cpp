@@ -985,7 +985,7 @@ FLOAT hmax)                        ///< [in] Maximum smoothing length
 
   // If h is invalid (i.e. larger than maximum h), then return error code (0)
   if (parti.h <= hmax) return 1;
-  else return -1;
+  else return 0;
     }
 
 
