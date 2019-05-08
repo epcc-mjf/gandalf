@@ -10,11 +10,11 @@ if [[ $MEASURE = true ]]; then
     # Remove gcc so that libstdc++ gets loaded again later.
     module unload gcc
 
-    # Load Advisor before gcc to not pick up Advisor's old libstdc++.
-    # Probably Advisor's library directory should not be in
-    # LD_LIBRARY_PATH?  This now breaks amplxe-gui.
-    #module load intel/advisor/2019
-    export ADVISOR_2019_DIR=/cm/shared/apps/intel/advisor_2019
+    # Load Advisor before gcc to not pick up Advisor's old libstdc++
+    # (just in case).
+    module load intel/advisor/2019
+    # Not working, so mimic
+    #export ADVISOR_2019_DIR=/cm/shared/apps/intel/advisor_2019
 
     source $ADVISOR_2019_DIR/advixe-vars.sh
     export ADVISOR_DIR=$ADVISOR_2019_DIR
