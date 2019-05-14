@@ -25,9 +25,9 @@ fi
 
 cd ~/gandalf/tests
 
-input=disc_short_10
+input=disc_short_128
 suffix=DiRAC_RSE-cache_group_together_prefetch
-sequence=194.$suffix
+sequence=195.$suffix
 rm -rf $input.$sequence
 mkdir $input.$sequence
 (
@@ -73,9 +73,9 @@ mkdir $input.$sequence
     mpirun -n 1 -gtool "amplxe-cl -collect uarch-exploration -knob collect-memory-bandwidth=true -data-limit=0 -result-dir /home/dc-fili1/gandalf/intel/amplxe/projects/gandalf/$input.$sequence.uarch-exploration:0" /home/dc-fili1/gandalf/bin/gandalf_measure ../DiRAC/$input.dat &> output
 )
 
-input=disc_short_10
+input=disc_short_128
 suffix=DiRAC_RSE-c++17
-sequence=194.$suffix
+sequence=195.$suffix
 rm -rf $input.$sequence
 mkdir $input.$sequence
 (

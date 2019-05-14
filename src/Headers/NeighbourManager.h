@@ -646,22 +646,22 @@ private:
 
       // Record if neighbour is direct-sum or and SPH neighbour.
       // If SPH neighbour, also record max. timestep level for neighbour
-      if (drsqd >= hrangesqdi && !_scatter_overlap(neibpart, drsqd, 0, gather_only())) {
-        if (keep_grav) {
-          if(gravmask[neibpart.ptype]) {
-            directlist.push_back(i);
-          } else {
-            _NNonInteract++;
-          }
-        }
-      }
-      else {
+      if (drsqd < hrangesqdi || _scatter_overlap(neibpart, drsqd, 0, gather_only())) {
         if (hydromask[neibpart.ptype]){
           culled_neiblist.push_back(i);
         }
         else if (keep_grav) {
           if (gravmask[neibpart.ptype]) {
             smoothgravlist.push_back(i);
+          } else {
+            _NNonInteract++;
+          }
+        }
+      }
+      else {
+        if (keep_grav) {
+          if(gravmask[neibpart.ptype]) {
+            directlist.push_back(i);
           } else {
             _NNonInteract++;
           }
