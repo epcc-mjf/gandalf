@@ -375,35 +375,34 @@ template<int ndim> bool BoxOverlap
 /*
 {
   for (int k=0; k<ndim; k++) {
-    if (box1.min[k] > box2.max[k]) return false;
+    if (box1.min[k] <= box2.max[k]) return true;
   }
   for (int k=0; k<ndim; k++) {
-    if (box2.min[k] > box1.max[k]) return false;
+    if (box2.min[k] <= box1.max[k]) return true;
   }
-  return true;
+  return false;
 }
 */
 {
   if (ndim == 3) {
-    if (box1.min[0] > box2.max[0]) return false;
-    if (box1.min[1] > box2.max[1]) return false;
-    if (box1.min[2] > box2.max[2]) return false;
-    if (box2.min[0] > box1.max[0]) return false;
-    if (box2.min[1] > box1.max[1]) return false;
-    if (box2.min[2] > box1.max[2]) return false;
-    return true;
+    if (box1.min[0] <= box2.max[0]
+	&& box1.min[1] <= box2.max[1]
+	&& box1.min[2] <= box2.max[2]
+	&& box2.min[0] <= box1.max[0]
+	&& box2.min[1] <= box1.max[1]
+	&& box2.min[2] <= box1.max[2]) return true;
+    else return false;
   }
   else if (ndim == 2) {
-    if (box1.min[0] > box2.max[0]) return false;
-    if (box1.min[1] > box2.max[1]) return false;
-    if (box2.min[0] > box1.max[0]) return false;
-    if (box2.min[1] > box1.max[1]) return false;
-    return true;
+    if (box1.min[0] <= box2.max[0]
+	&& box1.min[1] <= box2.max[1]
+	&& box2.min[1] <= box1.max[1]) return true;
+    else return false;
   }
   else {
-    if (box1.min[0] > box2.max[0]) return false;
-    if (box2.min[0] > box1.max[0]) return false;
-    return true;
+    if (box1.min[0] <= box2.max[0]
+	&&box2.min[0] <= box1.max[0]) return true;
+    else return false;
   }
 }
 
