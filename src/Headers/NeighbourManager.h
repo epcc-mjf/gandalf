@@ -555,7 +555,7 @@ private:
 	// or omit the test
 	//        if (drsqd < hrangemaxsqd) {
         if (drsqd < hrangemaxsqd || _scatter_overlap(neibdata[Nneib], drsqd, rmax, gather_only())) {
-          neibdata.push_back(partdata[i]);
+          neibdata.emplace_back(partdata[i]);
           neiblist.push_back(Nneib);
           neib_idx.push_back(i);
           Nneib++;
