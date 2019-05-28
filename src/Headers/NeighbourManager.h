@@ -11,6 +11,7 @@
 
 
 #include <iostream>
+#include <sstream>
 #ifdef INTEL_INTRINSICS
 #include <immintrin.h>
 #endif
@@ -583,12 +584,17 @@ private:
     _NCellDirectNeib = directlist.size();
     assert(neibdata.size() == (neiblist.size() + directlist.size()));
 
-    cout << "Npartd directlist.size():  " << Npartd << "  " << directlist.size() << endl;
-    cout << "Npartp _NPeriodicGhosts:  " << Npartp << "  " << _NPeriodicGhosts << endl;
-    cout << "Npart neiblist.size() neibdata.size():  "
+    stringstream cstr;
+    cstr << "Npartd directlist.size():  " << Npartd << "  " << directlist.size() << endl;
+    cout << cstr.str();
+    cstr << "Npartp _NPeriodicGhosts:  " << Npartp << "  " << _NPeriodicGhosts << endl;
+    cout << cstr.str();
+    cstr << "Npart neiblist.size() neibdata.size():  "
 	 << Npart << "  " << neiblist.size() << " " << neibdata.size() << endl;
-    cout << "p+d+o Nneib GetNumAllNeib:  "
+    cout << cstr.str();
+    cstr << "p+d+o Nneib GetNumAllNeib:  "
 	 << Npartd+Npartp+Npart << "  " << Nneib << "  " << GetNumAllNeib() << endl;
+    cout << cstr.str();
   }
 
 
@@ -684,9 +690,13 @@ private:
         }
       }
     }
-    cout << "_NCellDirectNeib directlist.size():  " << _NCellDirectNeib << "  " << directlist.size() << endl;
-    cout << "neiblist.size() culled_neiblist.size():  " << neiblist.size() << "  " << culled_neiblist.size() << endl;
-    cout << "smoothgravlist.size():  " << smoothgravlist.size() << endl;
+    stringstream cstr;
+    cstr << "_NCellDirectNeib directlist.size():  " << _NCellDirectNeib << "  " << directlist.size() << endl;
+    cout << cstr.str();
+    cstr << "neiblist.size() culled_neiblist.size():  " << neiblist.size() << "  " << culled_neiblist.size() << endl;
+    cout << cstr.str();
+    cstr << "smoothgravlist.size():  " << smoothgravlist.size() << endl;
+    cout << cstr.str();
   }
 
   template<class InParticleType>
@@ -841,22 +851,26 @@ private:
          for (int k=0; k<ndim; k++) dr[k] = partdata[truengb[j]].r[k] - partdata[i].r[k];
          GhostFinder.NearestPeriodicVector(dr);
          drsqd = DotProduct(dr,dr,ndim);
-         cout << "Could not find neighbour " << j << "   " << truengb[j] << "     " << i
+	 stringstream cstr;
+         cstr << "Could not find neighbour " << j << "   " << truengb[j] << "     " << i
              << "      " << sqrt(drsqd)/sqrt(partdata[i].hrangesqd) << "     "
              << sqrt(drsqd)/sqrt(partdata[j].hrangesqd) << "    "
              << partdata[truengb[j]].r[0] << "   type : "
              << partdata[truengb[j]].ptype << endl;
          invalid_flag++;
+	 cout << cstr.str();
        }
 
      }
      // If the true neighbour is not in the list, or included multiple times,
      // then output to screen and terminate program
      if (invalid_flag) {
-       cout << "Problem with neighbour lists (" << listtype << ") : " << i << "  " << j << "   "
+       stringstream cstr;
+       cstr << "Problem with neighbour lists (" << listtype << ") : " << i << "  " << j << "   "
            <<  invalid_flag << "    " << partdata[i].r[0] << "   " << partdata[i].h << endl
            << "Nneib : " << neib_idx.size() << "   Ntrueneib : " << truengb.size()
            << "    searchmode : " << searchmode << endl;
+       cout << cstr.str();
        InsertionSort(reducedngb.size(), &reducedngb[0]);
        PrintArray("neiblist     : ",reducedngb.size(), &reducedngb[0]);
        PrintArray("trueneiblist : ",truengb.size() , &truengb[0]);

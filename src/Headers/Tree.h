@@ -104,6 +104,7 @@ protected:
 
 	virtual int ComputeActiveParticleList(TreeCellBase<ndim> &, Particle<ndim> *, int *) = 0 ;
 	virtual int ComputeActiveCellPointers(TreeCellBase<ndim> **celllist) = 0 ;
+        virtual void ParticleInCellDistribution() = 0;
 	virtual int ComputeActiveCellList(vector<TreeCellBase<ndim> >& ) = 0 ;
 	virtual int ComputeGatherNeighbourList(const Particle<ndim> *, const FLOAT *,
 	                                       const FLOAT, const int, int &, int *) = 0 ;
@@ -290,6 +291,7 @@ protected:
 
 
   int ComputeActiveParticleList(TreeCellBase<ndim> &, Particle<ndim> *, int *);
+  void ParticleInCellDistribution();
   int ComputeActiveCellList(vector<TreeCellBase<ndim> >& );
   int ComputeActiveCellPointers(TreeCellBase<ndim> **celllist);
   int ComputeGatherNeighbourList(const Particle<ndim> *, const FLOAT *,

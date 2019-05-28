@@ -26,6 +26,7 @@
 #include <cstdlib>
 #include <cassert>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <math.h>
 #include <vector>
@@ -101,10 +102,15 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
     neibmanagerbufdens.push_back(NeighbourManagerDensity(sph, simbox));
   }
 
+  // Print the particle distribution.
+  tree->ParticleInCellDistribution();
+
   // Find list of all cells that contain active particles
   cactive = tree->ComputeActiveCellList(celllist);
   assert(cactive <= tree->gtot);
-  cout << "Ncell  cactive = " << tree->Ncell << "  " << cactive << endl;
+  stringstream cstr;
+  cstr << "Ncell  cactive = " << tree->Ncell << "  " << cactive << endl;
+  cout << cstr.str();
 
   // If there are no active cells, return to main loop
   if (cactive == 0) return;
@@ -140,7 +146,9 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
       celldone = 1;
       hmax = cell.hmax;
 
-      cout << "active cell = " << cc << endl;
+      stringstream cstr;
+      cstr << "active cell = " << cc << endl;
+      cout << cstr.str();
 
       // If hmax is too small so the neighbour lists are invalid, make hmax
       // larger and then recompute for the current active cell.
@@ -148,7 +156,9 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
       do {
         // Find list of active particles in current cell
         Nactive = tree->ComputeActiveParticleList(cell, sphdata, activelist);
-        cout << "Nactive = " << Nactive << endl;
+	stringstream cstr;
+        cstr << "Nactive = " << Nactive << endl;
+	cout << cstr.str();
         for (j=0; j<Nactive; j++) activepart[j] = sphdata[activelist[j]];
 
 	// If there are sink particles present, check if any particle is inside
@@ -228,7 +238,9 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
   int Nactivetot=0;
   tree->AddWorkCost(celllist, twork, Nactivetot);
 #ifdef OUTPUT_ALL
-  cout << "Time computing smoothing lengths : " << twork << "     Nactivetot : " << Nactivetot << endl;
+  stringstream cstr;
+  cstr << "Time computing smoothing lengths : " << twork << "     Nactivetot : " << Nactivetot << endl;
+  cout << cstr.str();
 #endif
 #endif
 
@@ -269,6 +281,9 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
   for (int t = neibmanagerbufhydro.size(); t < Nthreads; ++t) {
     neibmanagerbufhydro.push_back(NeighbourManagerHydro(sph, simbox));
   }
+
+  // Print the particle distribution.
+  tree->ParticleInCellDistribution();
 
   // Find list of all cells that contain active particles
   cactive = tree->ComputeActiveCellList(celllist);
@@ -400,7 +415,9 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
   int Nactivetot=0;
   tree->AddWorkCost(celllist, twork, Nactivetot) ;
 #ifdef OUTPUT_ALL
-  cout << "Time computing forces : " << twork << "     Nactivetot : " << Nactivetot << endl;
+  stringstream cstr;
+  cstr << "Time computing forces : " << twork << "     Nactivetot : " << Nactivetot << endl;
+  cout << cstr.str();
 #endif
 #endif
 
@@ -434,6 +451,9 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
   for (int t = neibmanagerbufhydro.size(); t < Nthreads; ++t) {
     neibmanagerbufhydro.push_back(NeighbourManagerHydro(sph, simbox));
   }
+
+  // Print the particle distribution.
+  tree->ParticleInCellDistribution();
 
   // Find list of all cells that contain active particles
   cactive = tree->ComputeActiveCellList(celllist);
@@ -620,7 +640,9 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
   int Nactivetot=0;
   tree->AddWorkCost(celllist, twork, Nactivetot) ;
 #ifdef OUTPUT_ALL
-  cout << "Time computing forces : " << twork << "     Nactivetot : " << Nactivetot << endl;
+  stringstream cstr;
+  cstr << "Time computing forces : " << twork << "     Nactivetot : " << Nactivetot << endl;
+  cout << cstr.str();
 #endif
 #endif
 

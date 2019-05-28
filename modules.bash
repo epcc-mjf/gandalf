@@ -10,10 +10,12 @@ if [[ $MEASURE = true ]]; then
     # Remove gcc so that libstdc++ gets loaded again later.
     module unload gcc
 
-#    # Load Advisor before gcc to not pick up Advisor's old libstdc++.
-#    # Probably Advisor's library directory should not be in
-#    # LD_LIBRARY_PATH?
+    # Load Advisor before gcc to not pick up Advisor's old libstdc++
+    # (just in case).
     module load intel/advisor/2019
+    # Not working, so mimic
+    #export ADVISOR_2019_DIR=/cm/shared/apps/intel/advisor_2019
+
     source $ADVISOR_2019_DIR/advixe-vars.sh
     export ADVISOR_DIR=$ADVISOR_2019_DIR
     
@@ -23,6 +25,9 @@ if [[ $MEASURE = true ]]; then
     # Load Amplifier before gcc to not pick up Amplifier's old
     # libstdc++ (just in case).
     module load intel/vtune/2019
+    # Not working, so mimic
+    #export VTUNE_AMPLIFIER_2019_DIR=/cm/shared/apps/intel/vtune_amplifier_2019
+    
     source $VTUNE_AMPLIFIER_2019_DIR/amplxe-vars.sh
     export VTUNE_AMPLIFIER_DIR=$VTUNE_AMPLIFIER_2019_DIR
     

@@ -12,6 +12,9 @@ awk -e 'BEGIN {sum=0}; {sum++; print $1, sum}' part_sorted.txt > part_F.txt
 awk -e 'BEGIN {sum=0}; {sum++; print $1, sum}' neib_sorted.txt > neib_F.txt
 awk -e 'BEGIN {sum=0}; {sum++; print $1, sum}' culled_neib_sorted.txt > culled_neib_F.txt
 
+awk -e 'BEGIN {out=0}; /MainLoop()/ {out=1}; out && /^Nactive = / {print $3 > "nactive.txt"}' output
+sort -n nactive.txt | uniq -c > nactive_frequency.txt
+
 gnuplot
 set logscale x
 plot "F.txt" with points pt 0

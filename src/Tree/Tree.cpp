@@ -29,6 +29,7 @@
 #include <cstdlib>
 #include <cassert>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <math.h>
 #include "Precision.h"
@@ -81,6 +82,89 @@ int Tree<ndim,ParticleType,TreeCell>::ComputeActiveParticleList
 
   assert(Nactive <= Nleafmax);
   return Nactive;
+}
+
+
+
+//=================================================================================================
+//  Tree::ParticleInCellDistribution
+/// Print the districbution of the number of particles in a cell.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType, template<int> class TreeCell>
+void Tree<ndim,ParticleType,TreeCell>::ParticleInCellDistribution
+ ()
+{
+  int c;                               // Cell counter
+  int total = 0;
+  int number_total = 0;
+  auto frequency = new int[Nleafmax+2](); // <1 ; 1..Nleafmax ; >Nleafmax
+  auto number = new int[Nleafmax+2](); // <1 ; 1..Nleafmax ; >Nleafmax
+  for (int p=0; p<Nleafmax+2; p++) {
+    frequency[p] = 0;
+    number[p] = 0;
+  }
+#ifdef MPI_PARALLEL
+  int rank,n_mpi_cpus;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &n_mpi_cpus);
+#endif
+
+  for (c=0; c<Ncell; c++) {
+    if (celldata[c].copen == -1) { // leaf cell
+      if (celldata[c].N <= Nleafmax) { // <1 ; 1..Nleafmax
+	frequency[celldata[c].N]++;
+	number[celldata[c].N]+=celldata[c].N;
+      }
+      else { //>Nleafmax
+	frequency[Nleafmax]++;
+	number[Nleafmax]+=celldata[c].N;
+      }
+    }
+  }
+  for (int p=0; p<Nleafmax+2; p++) {
+    total += frequency[p];
+    number_total += number[p];
+  }
+  
+#ifdef MPI_PARALLEL
+  for (c=Ncell; c<Ncell+Nimportedcell; c++) {
+    // Are these all leaf cells?
+    if (celldata[c].N <= Nleafmax) { // <1 ; 1..Nleafmax
+      frequency[celldata[c].N]++;
+      number[celldata[c].N]+=celldata[c].N;
+    }
+    else { //>Nleafmax
+      frequency[Nleafmax]++;
+      number[Nleafmax]+=celldata[c].N;
+    }
+  }
+  for (int p=0; p<Nleafmax+2; p++) {
+    total += frequency[p];
+    number_total += number[p];
+  }
+#endif
+  
+  // With MPI, this should be a reduction and write out by rank 0 instead of
+  // writing from each rank.
+  stringstream cstr;
+#ifdef MPI_PARALLEL
+  cstr << rank;
+#endif
+  cstr << " total,numbertotal = " << total << "," << number_total;
+  cstr << " f =";
+  for (int p=0; p<Nleafmax+2; p++) cstr << " " << frequency[p];
+  cstr << " n =";
+  for (int p=0; p<Nleafmax+2; p++) cstr << " " << number[p];
+  cstr << endl;
+
+#ifdef MPI_PARALLEL
+  for (int r=0; r<n_mpi_cpus; r++) {
+    if (r == rank) cout << cstr.str();
+    MPI_Barrier(MPI_COMM_WORLD);
+  }
+#else
+  cout << cstr.str();
+#endif
 }
 
 
@@ -326,7 +410,9 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
 
   };
 
-  cout << "cells searched kept:  " << Nsearched << "  " << Nkept << endl;
+  stringstream cstr;
+  cstr << "cells searched kept:  " << Nsearched << "  " << Nkept << endl;
+  cout << cstr.str();
   //===============================================================================================
 }
 
@@ -510,7 +596,9 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 
   };
 
-  cout << "cells searched kept:  " << Nsearched << "  " << Nkept << endl;
+  stringstream cstr;
+  cstr << "cells searched kept:  " << Nsearched << "  " << Nkept << endl;
+  cout << cstr.str();
   //===============================================================================================
 
 }
@@ -586,7 +674,9 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
 
   };
 
-  cout << "cells searched kept:  " << Nsearched << "  " << Nkept << endl;
+  stringstream cstr;
+  cstr << "cells searched kept:  " << Nsearched << "  " << Nkept << endl;
+  cstr << cstr.str();
   //===============================================================================================
 
 
@@ -1304,9 +1394,11 @@ int Tree<ndim,ParticleType,TreeCell>::CreatePrunedTreeForMpiNode
     if (c > 0) prunedcells[c].parent = newCellIds[prunedcells[c].parent];
 
     if (prunedcells[c].cnext <= 0 || prunedcells[c].copen >= prunedcells[c].cnext) {
-      cout << "Problem with new pointers : " << c << "    " << Nprunedcell << "   "
+      stringstream cstr;
+      cstr << "Problem with new pointers : " << c << "    " << Nprunedcell << "   "
            << "    " << Nprunedcellmax << "    copen : " << prunedcells[c].copen
            << "    cnext : " << prunedcells[c].cnext << endl;
+      cout << cstr.str();
       ExceptionHandler::getIstance().raise("Problem with pruned tree cell pointers in Tree");
     }
     assert(prunedcells[c].cnext > 0);
@@ -1731,7 +1823,9 @@ FLOAT Tree<ndim,ParticleType,TreeCell>::ComputeWorkInBox
 
     // Code should not technically reach here (unless there's a problem)
     else {
-      cout << "Problem with overlap of pruned trees" << endl;
+      stringstream cstr;
+      cstr << "Problem with overlap of pruned trees" << endl;
+      cout << cstr.str();
       ExceptionHandler::getIstance().raise("Error with overlap of pruned trees in Tree");
     }
 
