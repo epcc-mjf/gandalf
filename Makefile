@@ -30,8 +30,8 @@ PRECISION          = DOUBLE
 # that will certainly prevent vectorisation.
 #
 # Need to switch on OpenMP to get the SIMD directives (if they would work!).
-OPENMP             = 0
-#OPENMP             = 1
+#OPENMP             = 0
+OPENMP             = 1
 PYSNAP_PRECISION   = DOUBLE
 OUTPUT_LEVEL       = 1
 DEBUG_LEVEL        = 0
