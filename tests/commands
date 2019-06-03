@@ -12,8 +12,12 @@ awk -e 'BEGIN {sum=0}; {sum++; print $1, sum}' part_sorted.txt > part_F.txt
 awk -e 'BEGIN {sum=0}; {sum++; print $1, sum}' neib_sorted.txt > neib_F.txt
 awk -e 'BEGIN {sum=0}; {sum++; print $1, sum}' culled_neib_sorted.txt > culled_neib_F.txt
 
-awk -e 'BEGIN {out=0}; /MainLoop()/ {out=1}; out && /^Nactive = / {print $3 > "nactive.txt"}' output
-sort -n nactive.txt | uniq -c > nactive_frequency.txt
+awk -e 'BEGIN {out=0}; /MainLoop()/ {out=1}; out && /nactive/ {print $0}' output | sort -n -k 5,5 > nactive8.txt
+awk -e 'BEGIN {out=0}; /MainLoop()/ {out=1}; out && /nculled/ {print $0}' output | sort -n -k 5,5 > nculled8.txt
+
+# Grand totals - easier(?) here than in the program.
+awk -e 'BEGIN {total=0; total1=0; for (p=1;p<=8;p++) f[p]=0}; {total+=$5; for (p=1;p<=8;p++) total1+=p*$5*$(11+p-1); for (p=1;p<=8;p++) f[p]+=$5*$(11+p-1)}; END {printf("%15i",total); printf(" %4.2f",total/total1); for (p=1;p<=8;p++) printf(" %4.2f",f[p]/total); printf("\n")}' nactive8.txt > g_nactive8.txt
+awk -e 'BEGIN {total=0; total1=0; for (p=1;p<=8;p++) f[p]=0}; {total+=$5; for (p=1;p<=8;p++) total1+=p*$5*$(11+p-1); for (p=1;p<=8;p++) f[p]+=$5*$(11+p-1)}; END {printf("%15i",total); printf(" %4.2f",total/total1); for (p=1;p<=8;p++) printf(" %4.2f",f[p]/total); printf("\n")}' nculled8.txt > g_nculled8.txt
 
 gnuplot
 set logscale x

@@ -104,6 +104,14 @@ void Tree<ndim,ParticleType,TreeCell>::ParticleInCellDistribution
     number[p] = 0;
   }
 #ifdef MPI_PARALLEL
+  int mpi_total = 0;
+  int mpi_number_total = 0;
+  auto mpi_frequency = new int[Nleafmax+2](); // <1 ; 1..Nleafmax ; >Nleafmax
+  auto mpi_number = new int[Nleafmax+2](); // <1 ; 1..Nleafmax ; >Nleafmax
+  for (int p=0; p<Nleafmax+2; p++) {
+    mpi_frequency[p] = 0;
+    mpi_number[p] = 0;
+  }
   int rank,n_mpi_cpus;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &n_mpi_cpus);
@@ -125,37 +133,43 @@ void Tree<ndim,ParticleType,TreeCell>::ParticleInCellDistribution
     total += frequency[p];
     number_total += number[p];
   }
-  
 #ifdef MPI_PARALLEL
   for (c=Ncell; c<Ncell+Nimportedcell; c++) {
     // Are these all leaf cells?
     if (celldata[c].N <= Nleafmax) { // <1 ; 1..Nleafmax
-      frequency[celldata[c].N]++;
-      number[celldata[c].N]+=celldata[c].N;
+      mpi_frequency[celldata[c].N]++;
+      mpi_number[celldata[c].N]+=celldata[c].N;
     }
     else { //>Nleafmax
-      frequency[Nleafmax]++;
-      number[Nleafmax]+=celldata[c].N;
+      mpi_frequency[Nleafmax]++;
+      mpi_number[Nleafmax]+=celldata[c].N;
     }
   }
-  for (int p=0; p<Nleafmax+2; p++) {
-    total += frequency[p];
-    number_total += number[p];
-  }
 #endif
+  for (int p=0; p<Nleafmax+2; p++) {
+    mpi_total += mpi_frequency[p];
+    mpi_number_total += mpi_number[p];
+  }
   
-  // With MPI, this should be a reduction and write out by rank 0 instead of
-  // writing from each rank.
   stringstream cstr;
 #ifdef MPI_PARALLEL
   cstr << rank;
 #endif
-  cstr << " total,numbertotal = " << total << "," << number_total;
+  cstr << " t,n = " << total << "," << number_total;
   cstr << " f =";
   for (int p=0; p<Nleafmax+2; p++) cstr << " " << frequency[p];
   cstr << " n =";
   for (int p=0; p<Nleafmax+2; p++) cstr << " " << number[p];
   cstr << endl;
+#ifdef MPI_PARALLEL
+  cstr << rank;
+  cstr << " mt,nt = " << mpi_total << "," << mpi_number_total;
+  cstr << " mf =";
+  for (int p=0; p<Nleafmax+2; p++) cstr << " " << mpi_frequency[p];
+  cstr << " mn =";
+  for (int p=0; p<Nleafmax+2; p++) cstr << " " << mpi_number[p];
+  cstr << endl;
+#endif
 
 #ifdef MPI_PARALLEL
   for (int r=0; r<n_mpi_cpus; r++) {
@@ -165,6 +179,9 @@ void Tree<ndim,ParticleType,TreeCell>::ParticleInCellDistribution
 #else
   cout << cstr.str();
 #endif
+
+  delete mpi_frequency;
+  delete frequency;
 }
 
 
@@ -362,9 +379,6 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
   for (int k=0; k<ndim; k++) gatherbox.min[k] = cell.bb.min[k] - kernrange*hmax;
   for (int k=0; k<ndim; k++) gatherbox.max[k] = cell.bb.max[k] + kernrange*hmax;
 
-  int Nsearched = 0;
-  int Nkept = 0;
-
   //===============================================================================================
   while (cc < Ncell) {
 
@@ -377,8 +391,6 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
       }
     }
 #endif
-
-    Nsearched++;
 
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
@@ -396,7 +408,6 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1) {
-	Nkept++;
         neibmanager.AddNeibs(celldata[cc]);
         cc = celldata[cc].cnext;
       }
@@ -409,10 +420,6 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeGatherNeighbourList
     }
 
   };
-
-  stringstream cstr;
-  cstr << "cells searched kept:  " << Nsearched << "  " << Nkept << endl;
-  cout << cstr.str();
   //===============================================================================================
 }
 
@@ -545,9 +552,6 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 
   int cc = 0;                          // Cell counter
 
-  int Nsearched = 0;
-  int Nkept = 0;
-
   //===============================================================================================
   while (cc < Ncell) {
 
@@ -560,8 +564,6 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
       }
     }
 #endif
-
-    Nsearched++;
 
     // Check if bounding boxes overlap with each other
     //---------------------------------------------------------------------------------------------
@@ -580,7 +582,6 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1) {
-	Nkept++;
         neibmanager.AddNeibs(celldata[cc]) ;
         cc = celldata[cc].cnext;
       }
@@ -595,10 +596,6 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourList
     }
 
   };
-
-  stringstream cstr;
-  cstr << "cells searched kept:  " << Nsearched << "  " << Nkept << endl;
-  cout << cstr.str();
   //===============================================================================================
 
 }
@@ -622,9 +619,6 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
   // Start with root cell and walk through entire tree
   int cc = 0;                          // Cell counter
 
-  int Nsearched = 0;
-  int Nkept = 0;
-
   // Walk through all cells in tree to determine particle and cell interaction lists
   //===============================================================================================
   while (cc < Ncell) {
@@ -638,8 +632,6 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
       }
     }
 #endif
-
-    Nsearched++;
 
     // Check if bounding boxes overlap with each other (for potential SPH neibs)
     //---------------------------------------------------------------------------------------------
@@ -658,7 +650,6 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
 
       // If leaf-cell, add particles to list
       else if (celldata[cc].copen == -1) {
-	Nkept++;
         neibmanager.AddPeriodicNeibs(celldata[cc]) ;
         cc = celldata[cc].cnext;
       }
@@ -673,10 +664,6 @@ void Tree<ndim,ParticleType,TreeCell>::ComputeNeighbourAndGhostList
     }
 
   };
-
-  stringstream cstr;
-  cstr << "cells searched kept:  " << Nsearched << "  " << Nkept << endl;
-  cstr << cstr.str();
   //===============================================================================================
 
 

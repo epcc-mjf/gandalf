@@ -9,7 +9,7 @@
 Simulation run id string                    : run_id = GI_DISC
 Select SPH simulation                       : sim = gradhsph
 Ndim                          		    : ndim = 3
-Number of particles			    : Nhydro = 1048576
+Number of particles			    : Nhydro = 1179648
 
 #-----------------------------
 # Units variables

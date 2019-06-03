@@ -28,7 +28,6 @@
 #include <cstdlib>
 #include <cassert>
 #include <iostream>
-#include <sstream>
 #include <math.h>
 #include <algorithm>
 #include "Precision.h"
@@ -174,9 +173,6 @@ int GradhSph<ndim, kernelclass>::ComputeH
     // routine.
     if (parti.flags.check(inside_sink)) {
       h_lower_bound = hmin_sink;
-      stringstream cstr;
-      cstr << "hmax h_lower_bound:  " << hmax << "  " << h_lower_bound << endl;
-      cout << cstr.str();
       if (hmax < h_lower_bound) return 0;
     }
   }
@@ -250,12 +246,10 @@ int GradhSph<ndim, kernelclass>::ComputeH
       parti.h = (FLOAT) 0.5*(h_lower_bound + h_upper_bound);
     }
     else {
-      stringstream cstr;
-      cstr << "H ITERATION : " << iteration << "    h : " << parti.h
+      cout << "H ITERATION : " << iteration << "    h : " << parti.h
            << "   rho : " << parti.rho << "   h_upper " << h_upper_bound << "    hmax :  " << hmax
            << "   h_lower : " << h_lower_bound << "    " << parti.hfactor << "    m : " << parti.m
            << "     " << parti.m*parti.hfactor*kern.w0(0.0) << "    " << Nneib << endl;
-      cout << cstr.str();
 
       string message = "Problem with convergence of h-rho iteration";
       ExceptionHandler::getIstance().raise(message);

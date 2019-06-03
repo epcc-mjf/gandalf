@@ -10,8 +10,6 @@
 #define NEIGHBOURMANAGER_H_
 
 
-#include <iostream>
-#include <sstream>
 #ifdef INTEL_INTRINSICS
 #include <immintrin.h>
 #endif
@@ -205,6 +203,7 @@ struct GravityNeighbourLists {
 //=================================================================================================
 template <int ndim, class ParticleType>
 class NeighbourManager : public NeighbourManagerDim<ndim> {
+  //  vector<int> culled_neiblist;
 private:
   int _NPeriodicGhosts;
   int _NCellDirectNeib;
@@ -214,7 +213,7 @@ private:
   vector<int> neib_idx;
   vector<ParticleType> neibdata;
 
-  vector<int> culled_neiblist;
+  //  vector<int> culled_neiblist;
   vector<int> smoothgravlist;
 
   vector<FLOAT> dr;
@@ -246,6 +245,8 @@ private:
 #endif
 
 public:
+  // Make this public to find the distribution of ranges.
+  vector<int> culled_neiblist;
   using NeighbourManagerDim<ndim>::tempneib;
   using NeighbourManagerDim<ndim>::tempperneib;
   using NeighbourManagerDim<ndim>::tempdirectneib;
@@ -438,13 +439,10 @@ private:
 
     // Now load the particles
 
-    int Npartd = 0, Npartp = 0, Npart = 0;
-
     // Start from direct neighbours
     if (keep_direct) {
       for (int ii=0; ii<(int) tempdirectneib.size(); ii++) {
         NeighbourManagerBase::range rng = tempdirectneib[ii] ;
-	Npartd += rng.end - rng.begin;
         for (int i=rng.begin; i < rng.end; ++i) {
 #ifdef INTEL_INTRINSICS
 	  if (AHEAD_E != 0) {
@@ -469,9 +467,6 @@ private:
 
           // Now create the particle / ghosts
           _AddParticleAndGhosts(GhostFinder, part, gather_only());
-	  // This is wrong - if there are mirror BCs there can be more than one
-	  // particle added to neibdata.  There needs to be a loop like the one
-	  // below.
           directlist.push_back(neibdata.size()-1);
           neib_idx.push_back(i);
         }
@@ -486,7 +481,6 @@ private:
     int Nneib = directlist.size();
     for (int ii=0; ii<(int) tempperneib.size(); ii++) {
       NeighbourManagerBase::range rng = tempperneib[ii] ;
-      Npartp += rng.end - rng.begin;
       for (int i=rng.begin; i < rng.end; ++i) {
 #ifdef INTEL_INTRINSICS
 	if (AHEAD_E != 0) {
@@ -537,7 +531,6 @@ private:
     // Find those particles that do not need ghosts on the fly
     for (int ii=0; ii<(int) tempneib.size(); ii++) {
       NeighbourManagerBase::range rng = tempneib[ii] ;
-      Npart += rng.end - rng.begin;
       for (int i=rng.begin; i < rng.end; ++i) {
 #ifdef INTEL_INTRINSICS
 	if (AHEAD_E != 0) {
@@ -583,18 +576,6 @@ private:
 
     _NCellDirectNeib = directlist.size();
     assert(neibdata.size() == (neiblist.size() + directlist.size()));
-
-    stringstream cstr;
-    cstr << "Npartd directlist.size():  " << Npartd << "  " << directlist.size() << endl;
-    cout << cstr.str();
-    cstr << "Npartp _NPeriodicGhosts:  " << Npartp << "  " << _NPeriodicGhosts << endl;
-    cout << cstr.str();
-    cstr << "Npart neiblist.size() neibdata.size():  "
-	 << Npart << "  " << neiblist.size() << " " << neibdata.size() << endl;
-    cout << cstr.str();
-    cstr << "p+d+o Nneib GetNumAllNeib:  "
-	 << Npartd+Npartp+Npart << "  " << Nneib << "  " << GetNumAllNeib() << endl;
-    cout << cstr.str();
   }
 
 
@@ -690,13 +671,6 @@ private:
         }
       }
     }
-    stringstream cstr;
-    cstr << "_NCellDirectNeib directlist.size():  " << _NCellDirectNeib << "  " << directlist.size() << endl;
-    cout << cstr.str();
-    cstr << "neiblist.size() culled_neiblist.size():  " << neiblist.size() << "  " << culled_neiblist.size() << endl;
-    cout << cstr.str();
-    cstr << "smoothgravlist.size():  " << smoothgravlist.size() << endl;
-    cout << cstr.str();
   }
 
   template<class InParticleType>
@@ -851,26 +825,22 @@ private:
          for (int k=0; k<ndim; k++) dr[k] = partdata[truengb[j]].r[k] - partdata[i].r[k];
          GhostFinder.NearestPeriodicVector(dr);
          drsqd = DotProduct(dr,dr,ndim);
-	 stringstream cstr;
-         cstr << "Could not find neighbour " << j << "   " << truengb[j] << "     " << i
+         cout << "Could not find neighbour " << j << "   " << truengb[j] << "     " << i
              << "      " << sqrt(drsqd)/sqrt(partdata[i].hrangesqd) << "     "
              << sqrt(drsqd)/sqrt(partdata[j].hrangesqd) << "    "
              << partdata[truengb[j]].r[0] << "   type : "
              << partdata[truengb[j]].ptype << endl;
          invalid_flag++;
-	 cout << cstr.str();
        }
 
      }
      // If the true neighbour is not in the list, or included multiple times,
      // then output to screen and terminate program
      if (invalid_flag) {
-       stringstream cstr;
-       cstr << "Problem with neighbour lists (" << listtype << ") : " << i << "  " << j << "   "
+       cout << "Problem with neighbour lists (" << listtype << ") : " << i << "  " << j << "   "
            <<  invalid_flag << "    " << partdata[i].r[0] << "   " << partdata[i].h << endl
            << "Nneib : " << neib_idx.size() << "   Ntrueneib : " << truengb.size()
            << "    searchmode : " << searchmode << endl;
-       cout << cstr.str();
        InsertionSort(reducedngb.size(), &reducedngb[0]);
        PrintArray("neiblist     : ",reducedngb.size(), &reducedngb[0]);
        PrintArray("trueneiblist : ",truengb.size() , &truengb[0]);

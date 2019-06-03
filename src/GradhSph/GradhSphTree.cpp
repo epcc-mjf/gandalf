@@ -44,6 +44,48 @@
 #endif
 using namespace std;
 
+#define SIMD_LENGTH 8
+
+//=================================================================================================
+//  PrintFrequencies
+/// Prints frequencies of unfilled SIMD vectors
+//=================================================================================================
+void PrintFrequencies(string title, int* freq) {
+#ifdef MPI_PARALLEL
+  int rank,n_mpi_cpus;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  MPI_Comm_size(MPI_COMM_WORLD, &n_mpi_cpus);
+#endif
+
+  int total,total1;
+  stringstream cstr;
+  cstr << fixed << setprecision(2);
+#ifdef MPI_PARALLEL
+  if (n_mpi_cpus > 1) cstr << setw(3) << rank << " ";
+#endif
+  cstr << title << " " << setw(1) << SIMD_LENGTH;
+  cstr << " total = ";
+  total = 0;
+  for (int p=1; p<1+SIMD_LENGTH; p++) total+=freq[p];
+  cstr << setw(9) << total;
+  cstr << " time = ";
+  total1 = 0;
+  for (int p=1; p<1+SIMD_LENGTH; p++) total1+=p*freq[p];
+  cstr << setw(4) << float(total)/total1;
+  cstr << " f =";
+  for (int p=1; p<1+SIMD_LENGTH; p++) cstr << " " << setw(4) << float(freq[p])/total;
+  cstr << endl;
+#ifdef MPI_PARALLEL
+  for (int r=0; r<n_mpi_cpus; r++) {
+    if (r == rank) cout << cstr.str();
+    MPI_Barrier(MPI_COMM_WORLD);
+  }
+#else
+  cout << cstr.str();
+#endif
+}
+
+
 
 //=================================================================================================
 //  GradhSphTree::GradhSphTree
@@ -108,17 +150,22 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
   // Find list of all cells that contain active particles
   cactive = tree->ComputeActiveCellList(celllist);
   assert(cactive <= tree->gtot);
-  stringstream cstr;
-  cstr << "Ncell  cactive = " << tree->Ncell << "  " << cactive << endl;
-  cout << cstr.str();
 
   // If there are no active cells, return to main loop
   if (cactive == 0) return;
 
+  int active_f[1+SIMD_LENGTH+1]; // 0,1,...SIMD_LENGTH,>SIMD_LENGTH
+  for (int p=0; p<1+SIMD_LENGTH+1; p++) {
+    active_f[p] = 0;
+  }
+  int culled_f[1+SIMD_LENGTH+1]; // 0,1,...SIMD_LENGTH,>SIMD_LENGTH
+  for (int p=0; p<1+SIMD_LENGTH+1; p++) {
+    culled_f[p] = 0;
+  }
 
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,cout,nbody,sph,sphdata)
+#pragma omp parallel default(none) shared(cactive,celllist,cout,nbody,sph,sphdata) reduction(+:active_f,culled_f)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -136,7 +183,6 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
     ParticleType<ndim>* activepart = activepartbuf[ithread];   // Local array of active particles
     NeighbourManager<ndim,DensityParticle>& neibmanager = neibmanagerbufdens[ithread];
 
-
     // Loop over all active cells
     //=============================================================================================
 #pragma omp for schedule(guided)
@@ -146,19 +192,17 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
       celldone = 1;
       hmax = cell.hmax;
 
-      stringstream cstr;
-      cstr << "active cell = " << cc << endl;
-      cout << cstr.str();
-
       // If hmax is too small so the neighbour lists are invalid, make hmax
       // larger and then recompute for the current active cell.
       //-------------------------------------------------------------------------------------------
       do {
         // Find list of active particles in current cell
         Nactive = tree->ComputeActiveParticleList(cell, sphdata, activelist);
-	stringstream cstr;
-        cstr << "Nactive = " << Nactive << endl;
-	cout << cstr.str();
+
+	//if (Nactive <= SIMD_LENGTH) active_f[Nactive]++; else active_f[SIMD_LENGTH+1]++;
+	active_f[SIMD_LENGTH] += Nactive/SIMD_LENGTH;
+	active_f[Nactive%SIMD_LENGTH]++; // 0 will fill up, but is ignored.
+
         for (j=0; j<Nactive; j++) activepart[j] = sphdata[activelist[j]];
 
 	// If there are sink particles present, check if any particle is inside
@@ -171,7 +215,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 	    }
 	  }
 	}
-	
+
         hmax = (FLOAT) 1.05*hmax;
         cell.hmax = hmax;
         celldone = 1;
@@ -190,6 +234,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
         //-----------------------------------------------------------------------------------------
         for (j=0; j<Nactive; j++) {
           Typemask densmask = sph->types[activepart[j].ptype].hmask;
+	  int p,q;
 
           // Set gather range as current h multiplied by some tolerance factor
           hrangesqd = kernrangesqd*hmax*hmax;
@@ -197,6 +242,16 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
           NeighbourList<DensityParticle> neiblist =
               neibmanager.GetParticleNeibGather(activepart[j],densmask,hrangesqd);
 
+	  for (p=0,q=1; q < neibmanager.culled_neiblist.size(); q++) {
+	    if (neibmanager.culled_neiblist[q] > neibmanager.culled_neiblist[p]+SIMD_LENGTH-1) {
+	      culled_f[q-p]++;
+	      p = q;
+	    }
+	  }
+	  if (neibmanager.culled_neiblist[q] > neibmanager.culled_neiblist[p]+SIMD_LENGTH-1) {
+	    culled_f[q-p]++;
+	  }
+	  
           // Compute smoothing length and other gather properties for ptcl i
           okflag = sph->ComputeH(activepart[j], hmax, neiblist, nbody);
 
@@ -231,6 +286,9 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 
   }
   //===============================================================================================
+
+  PrintFrequencies("nactive", active_f);
+  PrintFrequencies("nculled", culled_f);
 
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
@@ -292,9 +350,19 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
   if (cactive == 0) return;
 
 
+  int total,total1;
+  int active_f[1+SIMD_LENGTH+1]; // 0,1,...SIMD_LENGTH,>SIMD_LENGTH
+  for (int p=0; p<1+SIMD_LENGTH+1; p++) {
+    active_f[p] = 0;
+  }
+  int culled_f[1+SIMD_LENGTH+1]; // 0,1,...SIMD_LENGTH,>SIMD_LENGTH
+  for (int p=0; p<1+SIMD_LENGTH+1; p++) {
+    culled_f[p] = 0;
+  }
+
   // Set-up all OMP threads
   //===============================================================================================
-#pragma omp parallel default(none) shared(cactive,celllist,nbody,simbox,sph,sphdata)
+#pragma omp parallel default(none) shared(cactive,celllist,nbody,simbox,sph,sphdata) reduction(+:active_f,culled_f)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -314,9 +382,14 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
 #pragma omp for schedule(guided)
     for (int cc=0; cc<cactive; cc++) {
       TreeCellBase<ndim>& cell = celllist[cc];
+      int p,q;
 
       // Find list of active particles in current cell
       const int Nactive = tree->ComputeActiveParticleList(cell,sphdata,activelist);
+
+      //if (Nactive <= SIMD_LENGTH) active_f[Nactive]++; else active_f[SIMD_LENGTH+1]++;
+      active_f[SIMD_LENGTH] += Nactive/SIMD_LENGTH;
+      active_f[Nactive%SIMD_LENGTH]++; // 0 will fill up, but is ignored.
 
       // Make local copies of active particles
       for (int j=0; j<Nactive; j++) {
@@ -347,6 +420,16 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
           NeighbourList<HydroParticle> neiblist =
               neibmanager.GetParticleNeib(activepart[j],hydromask,do_pair_once);
 
+	  for (p=0,q=1; q < neibmanager.culled_neiblist.size(); q++) {
+	    if (neibmanager.culled_neiblist[q] > neibmanager.culled_neiblist[p]+SIMD_LENGTH-1) {
+	      culled_f[q-p]++;
+	      p = q;
+	    }
+	  }
+	  if (neibmanager.culled_neiblist[q] > neibmanager.culled_neiblist[p]+SIMD_LENGTH-1) {
+	    culled_f[q-p]++;
+	  }
+	  
 #if defined(VERIFY_ALL)
           neibmanager.VerifyNeighbourList(activelist[j], sph->Nhydro, sphdata, "all");
           neibmanager.VerifyReducedNeighbourList(activelist[j], neiblist, sph->Nhydro,
@@ -408,6 +491,8 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
   }
   //===============================================================================================
 
+  PrintFrequencies("nactive", active_f);
+  PrintFrequencies("nculled", culled_f);
 
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
@@ -462,9 +547,19 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
   if (cactive == 0) return;
 
 
+  int total,total1;
+  int active_f[1+SIMD_LENGTH+1]; // 0,1,...SIMD_LENGTH,>SIMD_LENGTH
+  for (int p=0; p<1+SIMD_LENGTH+1; p++) {
+    active_f[p] = 0;
+  }
+  int culled_f[1+SIMD_LENGTH+1]; // 0,1,...SIMD_LENGTH,>SIMD_LENGTH
+  for (int p=0; p<1+SIMD_LENGTH+1; p++) {
+    culled_f[p] = 0;
+  }
+
   // Set-up all OMP threads
   //===============================================================================================
-  #pragma omp parallel default(none) shared(celllist,cactive,ewald,nbody,simbox,sph,sphdata,cout)
+  #pragma omp parallel default(none) shared(celllist,cactive,ewald,nbody,simbox,sph,sphdata,cout) reduction(+:active_f,culled_f)
   {
 #if defined _OPENMP
     const int ithread = omp_get_thread_num();
@@ -492,9 +587,14 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 #pragma omp for schedule(guided)
     for (cc=0; cc<cactive; cc++) {
       TreeCellBase<ndim> &cell = celllist[cc];
+      int p,q;
 
       // Find list of active particles in current cell
       Nactive = tree->ComputeActiveParticleList(cell, sphdata, activelist);
+
+      //if (Nactive <= SIMD_LENGTH) active_f[Nactive]++; else active_f[SIMD_LENGTH+1]++;
+      active_f[SIMD_LENGTH] += Nactive/SIMD_LENGTH;
+      active_f[Nactive%SIMD_LENGTH]++; // 0 will fill up, but is ignored.
 
       // Make local copies of active particles
       for (int j=0; j<Nactive; j++) activepart[j] = sphdata[activelist[j]];
@@ -525,6 +625,16 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
         GravityNeighbourLists<HydroParticle> neiblists =
             neibmanager.GetParticleNeibGravity(activepart[j],hydromask);
 
+	for (p=0,q=1; q < neibmanager.culled_neiblist.size(); q++) {
+	  if (neibmanager.culled_neiblist[q] > neibmanager.culled_neiblist[p]+SIMD_LENGTH-1) {
+	    culled_f[q-p]++;
+	    p = q;
+	  }
+	}
+	if (neibmanager.culled_neiblist[q] > neibmanager.culled_neiblist[p]+SIMD_LENGTH-1) {
+	  culled_f[q-p]++;
+	}
+	  
         // Compute forces between SPH neighbours (hydro and gravity)
         typename ParticleType<ndim>::HydroMethod* method = (typename ParticleType<ndim>::HydroMethod*) sph;
 
@@ -633,6 +743,9 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphForces
 
   }
   //===============================================================================================
+
+  PrintFrequencies("nactive", active_f);
+  PrintFrequencies("nculled", culled_f);
 
   // Compute time spent in routine and in each cell for load balancing
 #ifdef MPI_PARALLEL
