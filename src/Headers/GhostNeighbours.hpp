@@ -269,6 +269,31 @@ public:
 	  return Nghost ;
 	}
 
+	//=================================================================================================
+	/// \brief Construct the centres and reflection signs of a cell. This list will include the
+	///        original cell or the periodic neighbour of the original
+	///        cell.  The original cell (particle?) must already be ngbs.back().
+	/// \author Mark Filipiak
+	/// \date   16 March 2019
+	/// \return The number of neighbours found
+	//===============================================================================================
+	template<class OutParticleType>
+	int ConstructGhostsScatterGather(vector<OutParticleType>& ngbs) const
+	{
+	  // First find the nearest periodic mirror
+	  if (_any_periodic)
+		_MakePeriodicGhost(ngbs.back()) ;
+
+
+	  // Number of Ghost cells
+	  int Nghost = 1 ;
+
+	  if (_any_mirror)
+		Nghost = _MakeReflectedScatterGatherGhosts(ngbs) ;
+
+	  return Nghost ;
+	}
+
     //=================================================================================================
 	/// \brief Construct the centres and reflection signs of a cell. This list will include the
 	///        original cell or the periodic neighbour of the original cell.
@@ -306,6 +331,31 @@ public:
     {
       // First find the nearest periodic mirror
       ngbs.push_back(p);
+      if (_any_periodic)
+        _MakePeriodicGhost(ngbs.back()) ;
+
+
+      // Number of Ghost cells
+      int Nghost = 1 ;
+      // Now recursively reflect the cells
+      if (_need_mirrors)
+        Nghost = _MakeReflectedGhostsGather(ngbs) ;
+
+      return Nghost ;
+    }
+
+    //=================================================================================================
+    /// \brief Construct the centres and reflection signs of a cell. This list will include the
+    ///        original cell or the periodic neighbour of the original cell.  The original cell
+    ///        (particle?) must already be ngbs.back().
+    /// \author Mark Filipiak
+    /// \date   17 June 2019
+    /// \return The number of neighbours found
+    //===============================================================================================
+    template<class OutParticleType>
+    int ConstructGhostsGather(vector<OutParticleType>& ngbs) const
+    {
+      // First find the nearest periodic mirror
       if (_any_periodic)
         _MakePeriodicGhost(ngbs.back()) ;
 
