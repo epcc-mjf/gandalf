@@ -463,15 +463,7 @@ private:
           if (!gravmask[part.ptype]) continue;
 
           // Now create the particle / ghosts
-	  // Doing
-	  //neibdata.push_back(part);
-	  //_AddParticleAndGhosts(GhostFinder, gather_only());
-	  // instead of
-	  //_AddParticleAndGhosts(GhostFinder, partd, gather_only());
-	  // makes no difference - the time just goes elsewhere (strangely, the
-	  // HydroForceParticle construction takes much longer).
-	  neibdata.emplace_back(part);
-	  _AddParticleAndGhosts(GhostFinder, gather_only());
+          _AddParticleAndGhosts(GhostFinder, part, gather_only());
           directlist.push_back(neibdata.size()-1);
           neib_idx.push_back(i);
         }
@@ -505,15 +497,7 @@ private:
 #endif
         if (partdata[i].flags.is_dead()) continue;
 
-	// Doing
-	//neibdata.push_back(partdata[i]);
-	//_AddParticleAndGhosts(GhostFinder, gather_only());
-	// instead of
-        //_AddParticleAndGhosts(GhostFinder, partdata[i], gather_only());
-	// makes no difference - the time just goes elsewhere (strangely, the
-	// HydroForceParticle construction takes much longer).
-	neibdata.emplace_back(partdata[i]);
-	_AddParticleAndGhosts(GhostFinder, gather_only());
+        _AddParticleAndGhosts(GhostFinder, partdata[i], gather_only());
 
         while (Nneib < (int) neibdata.size()) {
           int Nmax = neibdata.size();
@@ -733,20 +717,6 @@ private:
    _true_type)
   {
     GhostFinder.ConstructGhostsGather(part, neibdata);
-  }
-
-  void _AddParticleAndGhosts
-  (const GhostNeighbourFinder<ndim>& GhostFinder,
-   _false_type)
-  {
-    GhostFinder.ConstructGhostsScatterGather(neibdata);
-  }
-
-  void _AddParticleAndGhosts
-  (const GhostNeighbourFinder<ndim>& GhostFinder,
-   _true_type)
-  {
-    GhostFinder.ConstructGhostsGather(neibdata);
   }
 
 
