@@ -30,6 +30,7 @@
 #include <iostream>
 #include <math.h>
 #include <algorithm>
+#include "SIMD.h"
 #include "Precision.h"
 #include "Sph.h"
 #include "Particle.h"
@@ -39,6 +40,7 @@
 #include "Debug.h"
 #include "Exception.h"
 #include "InlineFuncs.h"
+#include "NeighbourManager.h"
 using namespace std;
 
 
@@ -277,6 +279,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
     parti.flags.set(potmin);
     for (j=0; j<Nneib; j++) {
       const DensityParticle &ngb = ngbs[j];
+      // Surely these two lines should be swapped?
       FLOAT drsqd = DotProduct(dr,dr,ndim);
       for (k=0; k<ndim; k++) dr[k] = ngb.r[k] - parti.r[k];
       if (ngb.gpot > (FLOAT) 1.000000001*parti.gpot &&
@@ -331,6 +334,279 @@ int GradhSph<ndim, kernelclass>::ComputeH
   // else return -1;
   else return 0;
 }
+
+
+
+//=================================================================================================
+//  GradhSph::ComputeHArray
+/// Compute the value of the smoothing length of particle 'i' by iterating the relation :
+/// h = h_fac*(m/rho)^(1/ndim).
+/// Uses the previous value of h as a starting guess and then uses either a Newton-Rhapson solver,
+/// or fixed-point iteration, to converge on the correct value of h.  The maximum tolerance used
+/// for deciding whether the iteration has converged is given by the 'h_converge' parameter.
+//=================================================================================================
+
+template <int ndim, template<int> class kernelclass>
+int GradhSph<ndim, kernelclass>::ComputeHArray
+ (SphParticle<ndim>* part,                                ///< [inout] Particle i data array
+  const int npart,                                        ///< [in] Particle i data array length
+  FLOAT hrangesqd,
+  FLOAT hmax,                                             ///< [in] Maximum smoothing length
+  // const or not?
+  const NeighbourManager<ndim,DensityParticle>& neibmanager, ///< [in] NeighbourManager object
+  Nbody<ndim> *nbody)                                     ///< [in] Main N-body object
+{/*
+  int j;                               // Neighbour id
+  int k;                               // Dimension counter
+  int iteration[MAX_NPART];            // h-rho iteration counter
+  int iteration_max = 30;              // Max. no of iterations
+  FLOAT dr[ndim][MAX_NPART];           // Relative position vector
+  FLOAT h_lower_bound[MAX_NPART];      // Lower bound on h
+  FLOAT h_upper_bound[MAX_NPART];      // Upper bound on h
+  FLOAT h[MAX_NPART];                  // h
+  FLOAT invh[MAX_NPART];               // 1 / h
+  FLOAT invhsqd[MAX_NPART];            // (1 / h)^2
+  FLOAT ssqd[MAX_NPART];               // Kernel parameter squared, (r/h)^2
+  FLOAT rho[MAX_NPART];                //
+  FLOAT invomega[MAX_NPART];           //
+  FLOAT zeta[MAX_NPART];               //
+  FLOAT hfactor[MAX_NPART];            //
+  FLOAT m[MAX_NPART];                  //
+  FLOAT div_v[MAX_NPART];              //
+
+  bool any, all;
+
+  int level[MAX_NPART];
+  int iorig[MAX_NPART];
+  FLOAT r[ndim][MAX_NPART];
+  int neib;
+  FLOAT draux[ndim][MAX_NPART];
+  FLOAT drsqd[MAX_NPART];
+  bool culled[MAX_NPART];
+  bool smoothed_grav[MAX_NPART];
+  bool direct[MAX_NPART];
+
+  bool converged[MAX_NPART];
+  bool iterating;
+
+  assert(dynamic_cast<GradhSphParticle<ndim>* >(part));
+  GradhSphParticle<ndim>* parti = static_cast<GradhSphParticle<ndim>* >(part);
+
+  Typemask densmask[MAX_NPART];
+  for (int p=0; p<npart; p++) densmask[p] = types[parti[p].ptype].hmask;
+
+  bool do_appearance[MAX_NPART];      // Do this appearance of the neighbour
+				      // (maybe first, maybe both)
+  for (int p=0; p<npart; p++) do_appearance[p] = false;
+
+  for (int p=0; p<npart; p++) h_lower_bound[p] = (FLOAT) 0.0;
+  for (int p=0; p<npart; p++) h_upper_bound[p] = hmax;
+  // If there are sink particles present, check if the particle is inside one.
+  // If so, then adjust the iteration bounds and ensure they are valid (i.e. hmax is large enough)
+  if (sink_particles) {
+    for (int p=0; p<npart; p++) {
+      if (parti[p].flags.check(inside_sink)) {
+	h_lower_bound[p] = hmin_sink;
+      }
+    }
+    any = false;
+    for (int p=0; p<npart; p++) any |= hmax < h_lower_bound[p];
+    if (any) return 0;
+  }
+
+  int Nneib = neibmanager.GetNumNeib();
+
+  // Some basic sanity-checking in case of invalid input into routine
+  assert(Nneib > 0);
+  assert(hmax > (FLOAT) 0.0);
+  for (j=0; j<npart; j++) {
+    assert(!parti[j].flags.is_dead());
+    assert(parti[j].m > (FLOAT) 0.0);
+  }
+
+  for (int p=0; p<npart; p++) level[p] = parti[p].level;
+  for (int p=0; p<npart; p++) iorig[p] = parti[p].iorig;
+  for (int k=0; k<ndim; k++)
+    for (int p=0; p<npart; p++) r[ndim][MAX_NPART];
+  for (int p=0; p<npart; p++) m[p] = parti[p].m;
+
+  for (int p=0; p<npart; p++) converged[p] = false;
+  for (int p=0; p<npart; p++) iteration[p] = 0;
+  for (int p=0; p<npart; p++) h[p] = parti[p].h;
+  // Main smoothing length iteration loop
+  //===============================================================================================
+  do {
+
+    // xxxxx everthing should be masked with converged[p], but that may not make
+    // any difference once SIMDed, unles a whole SIMD length is masked out.
+
+    // Initialise all variables for this value of h
+    for (int p=0; p<npart; p++) iteration[p]++;
+    for (int p=0; p<npart; p++) invh[p]     = (FLOAT) 1.0/h[p];
+    for (int p=0; p<npart; p++) invhsqd[p]  = invh[p]*invh[p];
+    for (int p=0; p<npart; p++) rho[p]      = (FLOAT) 0.0;
+    for (int p=0; p<npart; p++) invomega[p] = (FLOAT) 0.0;
+    for (int p=0; p<npart; p++) zeta[p]     = (FLOAT) 0.0;
+    for (int p=0; p<npart; p++) hfactor[p]  = pow(invh[p],ndim);
+
+    // Loop over all nearest neighbours in list to calculate density, omega and zeta.
+    //---------------------------------------------------------------------------------------------
+    for (int neib=0; neib<Nneib; neib++) {
+
+      MaskParticleNeibGather(level, iorig, r, npart, neib, densmask, hrangesqd,
+			     dr, drsqd, culled, smoothed_grav, direct);
+
+      // the following is only for culled
+      const DensityParticle& ngb = neibmanager.GetNeib(neib);
+      for (int p=0; p<npart; p++) if (culled[p]) ssqd[p]      = invhsqd[p]*drsqd[p];
+      // The kernel functions need to be SIMDed (TabulatedKernel is OK, using a
+      // gather; the others less so.  And the kernels are 15% of the total
+      // ComputeHydroForces and ComputeH time.
+      for (int p=0; p<npart; p++) if (culled[p]) rho[p]      += ngb.m*kern.w0_s2(ssqd[p]);
+      for (int p=0; p<npart; p++) if (culled[p]) invomega[p] += ngb.m*invh[p]*kern.womega_s2(ssqd[p]);
+      for (int p=0; p<npart; p++) if (culled[p]) zeta[p]     += ngb.m*kern.wzeta_s2(ssqd[p]);
+    }
+    //---------------------------------------------------------------------------------------------
+
+    for (int p=0; p<npart; p++) rho[p]      *= hfactor[p];
+    for (int p=0; p<npart; p++) invomega[p] *= hfactor[p];
+    for (int p=0; p<npart; p++) zeta[p]     *= invhsqd[p];
+
+    // Density must at least equal its self-contribution
+    // (failure could indicate neighbour list problem)
+    for (int p=0; p<npart; p++) assert(rho[p] >= 0.99*m[p]*hfactor[p]*kern.w0_s2(0.0));
+
+    // If h changes below some fixed tolerance for all particles, exit iteration loop
+
+    // There is a SIMD h_rho_func, but here we are out of the neighbour loop, so
+    // performance is not important(?).
+    for (int p=0; p<npart; p++)
+      converged[p]
+	= rho[p] > (FLOAT) 0.0
+	&& h[p] > h_lower_bound[p]
+	&& fabs(h[p] - h_rho_func(m[p], rho[p]))*invh[p] < h_converge;
+    
+    all = true;
+    for (int p=0; p<npart; p++) all &= converged[p];
+    if (all) break;
+
+    // Use fixed-point iteration, i.e. h_new = h_fac*(m/rho_old)^(1/ndim), for now.  If this does
+    // not converge in a reasonable number of iterations (iteration_max), then assume something is
+    // wrong and switch to a bisection method, which should be guaranteed to converge, albeit much
+    // more slowly.  (N.B. will implement Newton-Raphson soon)
+    //---------------------------------------------------------------------------------------------
+    for (int p=0; p<npart; p++) {
+      if (iteration[p] < iteration_max) {
+	h[p] = h_rho_func(m[p], rho[p]);
+      }
+      else if (iteration[p] == iteration_max) {
+	h[p] = (FLOAT) 0.5*(h_lower_bound[p] + h_upper_bound[p]);
+      }
+      else if (iteration[p] < 5*iteration_max) {
+	if (rho[p] < small_number || h[p] > h_rho_func(m[p], rho[p])) {
+	  //(rho[p] + rho_hmin)*pow(h[p],ndim) > pow(h_fac,ndim)*m[p]) {
+	  h_upper_bound[p] = h[p];
+	}
+	else {
+	  h_lower_bound[p] = h[p];
+	}
+	h[p] = (FLOAT) 0.5*(h_lower_bound[p] + h_upper_bound[p]);
+      }
+      else {
+	cout << "p : " << p << "   H ITERATION : " << iteration[p] << "   h[p] : " << h[p]
+	     << "   rho[p] : " << rho[p] << "   h_upper[p] " << h_upper_bound[p] << "   hmax :  " << hmax
+	     << "   h_lower : " << h_lower_bound << "   hfactor :  " << hfactor[p] << "   m : " << m[p]
+	     << "     " << m[p]*hfactor[p]*kern.w0(0.0) << "    " << Nneib << endl;
+	
+	string message = "Problem with convergence of h-rho iteration";
+	ExceptionHandler::getIstance().raise(message);
+      }
+    }
+
+    // If the smoothing length is too large for the neighbour list, exit routine and flag neighbour
+    // list error in order to generate a larger neighbour list (not properly implemented yet).
+    any = false;
+    for (int p=0; p<npart; p++) any |= h[p] > hmax;
+    if (any) return 0;
+
+    any = false;
+    for (int p=0; p<npart; p++) any |= h[p] > h_lower_bound[p] && h[p] < h_upper_bound[p];
+    iterating = any;
+    
+
+  } while (iterating);
+  //===============================================================================================
+
+
+  // Normalise all SPH sums correctly
+  for (int p=0; p<npart; p++) h[p]         = max(h_rho_func(m[p], rho[p]), h_lower_bound[p]);
+  for (int p=0; p<npart; p++) invh[p]      = (FLOAT) 1.0/h[p];
+  for (int p=0; p<npart; p++) hfactor[p]   = pow(invh[p], ndim+1);
+  for (int p=0; p<npart; p++) hrangesqd[p] = kern.kernrangesqd*h[p]*h[p];
+  for (int p=0; p<npart; p++) div_v[p]     = (FLOAT) 0.0;
+  for (int p=0; p<npart; p++) assert(isnormal(h[p]));
+  for (int p=0; p<npart; p++) assert(h[p] >= h_lower_bound[p]);
+
+  // Calculate the minimum neighbour potential (used later to identify new sinks)
+  if (create_sinks == 1) {
+    parti.flags.set(potmin);
+    for (j=0; j<Nneib; j++) {
+      const DensityParticle &ngb = ngbs[j];
+      // Surely these two lines should be swapped?
+      FLOAT drsqd = DotProduct(dr,dr,ndim);
+      for (k=0; k<ndim; k++) dr[k] = ngb.r[k] - parti.r[k];
+      if (ngb.gpot > (FLOAT) 1.000000001*parti.gpot &&
+          drsqd*invhsqd < kern.kernrangesqd) parti.flags.unset(potmin);
+    }
+  }
+
+  // If there are star particles, compute N-body zeta correction term
+  //-----------------------------------------------------------------------------------------------
+  if (!part.flags.check(inside_sink)) {
+    parti.invomega = (FLOAT) 1.0 - h_rho_deriv(parti.h, parti.m, parti.rho)*parti.invomega;
+    parti.invomega = (FLOAT) 1.0/parti.invomega;
+
+    // Use Hubber et al. (2013) zeta SPH-star conservative-gravity correction terms
+    if (this->conservative_sph_star_gravity == 1) {
+      if (nbody->nbody_softening == 1) {
+        for (j=0; j<nbody->Nstar; j++) {
+          invhsqd = pow((FLOAT) 2.0 / (parti.h + nbody->stardata[j].h),2);
+          for (k=0; k<ndim; k++) dr[k] = nbody->stardata[j].r[k] - parti.r[k];
+          ssqd = DotProduct(dr,dr,ndim)*invhsqd;
+          parti.zeta += nbody->stardata[j].m*invhsqd*kern.wzeta_s2(ssqd);
+        }
+      }
+      else {
+        invhsqd = (FLOAT) 4.0*invh*invh;
+        for (j=0; j<nbody->Nstar; j++) {
+          for (k=0; k<ndim; k++) dr[k] = nbody->stardata[j].r[k] - parti.r[k];
+          ssqd = DotProduct(dr,dr,ndim)*invhsqd;
+          parti.zeta += nbody->stardata[j].m*invhsqd*kern.wzeta_s2(ssqd);
+        }
+      }
+    }
+    parti.zeta = h_rho_deriv(parti.h, part.m, parti.rho)*parti.zeta*parti.invomega;
+
+  }
+  else {
+    parti.invomega = (FLOAT) 1.0;
+    parti.zeta     = (FLOAT) 0.0;
+  }
+
+
+  // Set important thermal variables here
+  ComputeThermalProperties(parti);
+
+  if (tdavisc == cd2010) {
+    this->ComputeCullenAndDehnenViscosity(parti, ngbs, kern);
+  }
+
+  // copy SIMDs back to parti.
+
+  // If h is invalid (i.e. larger than maximum h), then return error code (0)
+  if (parti.h <= hmax) return 1;
+  else return 0;
+*/}
 
 
 

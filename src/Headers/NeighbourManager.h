@@ -17,6 +17,7 @@
 #include <iterator>
 #include <vector>
 using namespace std;
+#include "SIMD.h"
 #include "TreeCell.h"
 #include "GhostNeighbours.hpp"
 #include "NeighbourManagerBase.h"
@@ -309,6 +310,20 @@ public:
     return neib_idx.size();
   }
   //===============================================================================================
+  //  GetNumNeib
+  /// \brief Return the total number of neighbours.
+  //===============================================================================================
+  int GetNumNeib() {
+    return neiblist.size();
+  }
+  //===============================================================================================
+  //  GetNumPeriodicGhosts
+  /// \brief Return the number of periodic ghosts.
+  //===============================================================================================
+  int GetNumPeriodicGhosts() {
+    return _NPeriodicGhosts;
+  }
+  //===============================================================================================
   //  operator[]
   /// \brief Provide access to individual neighbours found in the tree walk.
   //===============================================================================================
@@ -317,6 +332,14 @@ public:
   }
   const ParticleType& operator[](std::size_t i) const {
     return neibdata[i] ;
+  }
+  //===============================================================================================
+  //  GetNeib
+  /// \brief Get the reduced neighbour data for the i-th neighbour in the
+  //  neighbour list.
+  //===============================================================================================
+  ParticleType& GetNeib(int i) {
+    return neibdata[neiblist[i]];
   }
   //===============================================================================================
   //  GetNeibI
@@ -353,6 +376,34 @@ public:
   }
 
   //===============================================================================================
+  //  MaskParticleNeib
+  /// \brief    Set the masks and data for the Particles for a single neighbour
+  ///           that interacts hydrodynamically with them.
+  /// \details  This is determined by whether or not the particles smoothing spheres overlap,
+  ///           and hydromask, which specifies the types needed (hydromask[ptype] == true for the
+  ///           required particles). Also, if do_pair_once is included then the neighbour is only
+  ///           included if this interaction will not have been already calculated in the update
+  ///           for the neighbour itself.
+  /// \returns  Nothings.  The masks and data are returned in parameters
+  //===============================================================================================
+  template<class InParticleType>
+  void MaskParticleNeib(const int level[MAX_NPART], const int iorig[MAX_NPART],
+			const FLOAT r[ndim][MAX_NPART], const int npart,
+			const int neib, const Typemask& hydromask, const bool do_pair_once,
+			FLOAT draux[ndim][MAX_NPART], FLOAT drsqd[MAX_NPART],
+			bool culled[MAX_NPART], bool smoothed_grav[MAX_NPART], bool direct[MAX_NPART])
+  {
+    if (do_pair_once)
+      TrimNeighbour<InParticleType,_true_type,_false_type>
+	(level, iorig, r, npart, neib, hydromask, hrangesqd, false,
+	 draux, drsqd, culled, smoothed_grav, direct)
+
+	p, hydromask, p.hrangesqd, false);
+    else
+      TrimNeighbour<InParticleType,_false_type,_false_type>(p, hydromask, p.hrangesqd, false);
+  }
+
+  //===============================================================================================
   //  GetParticleNeibGather
   /// \brief    Get the list of particles within a given smoothing range of the target particle.
   /// \details  Gets a trimmed list of particles that that are within hrangeqd of the particle,
@@ -363,11 +414,31 @@ public:
   NeighbourList<ParticleType> GetParticleNeibGather
   (const InParticleType& p,                            ///< [in] Particle to collect the neibs for
    const Typemask& hydromask,                          ///< [in] Boolean flags listing types we need
-   const double hrangesqd)                             ///< [in] Maximum smoothing range for gather.
+   const FLOAT hrangesqd)                              ///< [in] Maximum smoothing range for gather.
   {
     TrimNeighbourLists<InParticleType,_false_type,_true_type>(p, hydromask, hrangesqd, false);
 
     return NeighbourList<ParticleType>(culled_neiblist, neibdata) ;
+  }
+
+  //===============================================================================================
+  //  MaskParticleNeibGather
+  /// \brief    Set the masks and data for the Particles for a single neighbour
+  ///           within a given smoothing range.
+  /// \details  The masks and data are set if the neighbour is within hrangeqd of a particle,
+  ///           for a density calculation.
+  /// \returns  Nothing.  The masks and data are returned in parameters.
+  //===============================================================================================
+  template<class InParticleType>
+  void MaskParticleNeibGather(const int level[MAX_NPART], const int iorig[MAX_NPART],
+			      const FLOAT r[ndim][MAX_NPART], const int npart,
+			      const int neib, const Typemask hydromask[MAX_NPART], const FLOAT hrangesqd,
+			      FLOAT dr[ndim][MAX_NPART], FLOAT drsqd[MAX_NPART],
+			      bool culled[MAX_NPART], bool smoothed_grav[MAX_NPART], bool direct[MAX_NPART])
+  {
+    TrimNeighbour<InParticleType,_false_type,_true_type>
+      (level, iorig, r, npart, neib, hydromask, hrangesqd, false,
+       dr, drsqd, culled, smoothed_grav, direct);
   }
 
   //===============================================================================================
@@ -435,6 +506,8 @@ private:
     assert(directlist.size()==0);
 
     // Now load the particles
+
+    // We could have 3 neibdata vectors:  direct, periodic, and ordinary neighbours.
 
     // Start from direct neighbours
     if (keep_direct) {
@@ -555,7 +628,7 @@ private:
 	// or omit the test
 	//        if (drsqd < hrangemaxsqd) {
         if (drsqd < hrangemaxsqd || _scatter_overlap(neibdata[Nneib], drsqd, rmax, gather_only())) {
-          neibdata.push_back(partdata[i]);
+          neibdata.emplace_back(partdata[i]);
           neiblist.push_back(Nneib);
           neib_idx.push_back(i);
           Nneib++;
@@ -563,7 +636,7 @@ private:
 	//        } else if (keep_direct && gravmask[partdata[i].ptype]) {
         } else if (keep_direct && gravmask[neibdata[Nneib].ptype]) {
           // Hydro candidates that fail the test get demoted to direct neighbours
-          neibdata.push_back(partdata[i]);
+          neibdata.emplace_back(partdata[i]);
           directlist.push_back(Nneib);
           neib_idx.push_back(i);
           Nneib++;
@@ -582,7 +655,7 @@ private:
   ///         neighbours are needed for hydro or gravity. Periodic corrections are applied.
   //===============================================================================================
   template<class InParticleType, class do_pair_once, class gather_only>
-  void TrimNeighbourLists(const InParticleType& p, const Typemask& hydromask, double hrangesqdi,
+  void TrimNeighbourLists(const InParticleType& p, const Typemask& hydromask, FLOAT hrangesqd,
                           bool keep_grav)
   {
     FLOAT rp[ndim];
@@ -646,7 +719,8 @@ private:
 
       // Record if neighbour is direct-sum or and SPH neighbour.
       // If SPH neighbour, also record max. timestep level for neighbour
-      if (drsqd >= hrangesqdi && !_scatter_overlap(neibpart, drsqd, 0, gather_only())) {
+      // How does this work, neibpart is ParticleType but _scatter_overlap needs 
+      if (drsqd >= hrangesqd && !_scatter_overlap(neibpart, drsqd, 0, gather_only())) {
         if (keep_grav) {
           if(gravmask[neibpart.ptype]) {
             directlist.push_back(i);
@@ -670,6 +744,87 @@ private:
     }
   }
 
+
+  //===============================================================================================
+  //  TrimNeighbour
+  /// \brief Only for ComputeHArray
+  /// \detail This function create masks for a single neighbour, determining whether
+  ///         the neighbour is needed for hydro or gravity. Periodic corrections
+  ///         are applied to dr only.  Better to pass in a ParticleType&, but
+  //          the index neib is nneded to work out if this is could be a periodic ghost
+  //          (maybe have a marked in the particle?)
+  //===============================================================================================
+  template<class InParticleType, class do_pair_once, class gather_only>
+  void TrimNeighbour(const int level[MAX_NPART], const int iorig[MAX_NPART],
+		     const FLOAT r[ndim][MAX_NPART], const int npart,
+		     const int neib, const Typemask hydromask[MAX_NPART],
+		     const FLOAT hrangesqd, const bool keep_grav,
+		     FLOAT dr[ndim][MAX_NPART], FLOAT drsqd[MAX_NPART],
+		     bool culled[MAX_NPART], bool smoothed_grav[MAX_NPART], bool direct[MAX_NPART])
+  {
+    bool do_mask[MAX_NPART]; // When using SIMD, mask1 should also mask off
+                             // [npart+1,MAX_NPART] for the last SIMD_LENGTH
+                             // chunk.  We also want a test for any(mask1[0:7]),
+                             // etc. - or will the masked AVX instructions
+                             // short-circuit and so this isn't needed?
+    bool scatter_mask[MAX_NPART];
+    bool hrange_mask[MAX_NPART];
+    bool hydro_mask[MAX_NPART];
+    bool grav_mask[MAX_NPART];
+    bool do_grav;
+    bool do_hydro[MAX_NPART];
+    bool any, all;
+    const GhostNeighbourFinder<ndim> GhostFinder(*_domain);
+    Typemask gravmask = _types->gravmask;
+
+    for (int p=0; p<npart; p++) culled[p] = false;
+    for (int p=0; p<npart; p++) smoothed_grav[p] = false;
+    for (int p=0; p<npart; p++) direct[p] = false;
+
+    for (int p=0; p<npart; p++) do_mask[p] = false;
+
+    // Check the distance. The ones that are not real neighbours
+    // are demoted to the direct list
+    ParticleType& neibpart = neibdata[neiblist[neib]];
+
+    _first_appearance(level, iorig, npart,
+		      neibpart, do_pair_once(),
+		      do_mask);
+    any = false;
+    for (int p=0; p<npart; p++) any |= do_mask[p];
+    if (!any) return;
+
+    // Convert from maps of booleans to scalars and arrays.
+    do_grav = keep_grav && gravmask[neibpart.ptype];
+    for (int p=0; p<npart; p++) do_hydro[p] = hydromask[neibpart.ptype];
+
+    // Compute relative position and distance quantities for pair
+    for (int k=0; k<ndim; k++)
+      for (int p=0; p<npart; p++) if (do_mask[p]) dr[k][p] = neibpart.r[k] - r[k][p];
+
+    if (neib < _NPeriodicGhosts)
+      //  This does not change neibpart.r
+      GhostFinder.PartlyApplyPeriodicDistanceCorrection(neibpart.r, dr, do_mask, npart);
+
+    // In the <ndim> needed?
+    DotProduct<ndim>(dr, dr, do_mask, npart, drsqd);
+
+    // Record if neighbour is direct-sum or and SPH neighbour.
+    // If SPH neighbour, also record max. timestep level for neighbour
+
+    for (int p=0; p<npart; p++) if (do_mask[p]) hrange_mask[p] = drsqd[p] < hrangesqd;
+    _scatter_overlap(neibpart.h, drsqd, (FLOAT) 0.0, gather_only(), do_mask, npart, scatter_mask);
+    for (int p=0; p<npart; p++) hydro_mask[p] = do_mask[p] &&  (hrange_mask[p] || scatter_mask[p]);
+    for (int p=0; p<npart; p++) grav_mask[p]  = do_mask[p] && !(hrange_mask[p] || scatter_mask[p]);
+
+    // Counting of _NNonInteract needs to be added?
+    for (int p=0; p<npart; p++) culled[p] = hydro_mask[p] && do_hydro[p] && ;
+    if (do_grav) {
+      for (int p=0; p<npart; p++) smoothed_grav[p] = hydro_mask[p] && !do_hydro[p];
+      for (int p=0; p<npart; p++) direct[p] = grav_mask[p];
+    }
+  }
+
   template<class InParticleType>
   bool _first_appearance(const InParticleType& p, const ParticleType& neibpart, _true_type) {
     // Get the neighbour only if this is it's first appearance, which will be true if any of
@@ -689,6 +844,28 @@ private:
     return true;
   }
 
+  void _first_appearance(const int level[MAX_NPART], const int iorig[MAX_NPART], const int npart,
+		         const ParticleType& neibpart, _true_type,
+		         bool do_appearance[MAX_NPART]) {
+    // Get the neighbour only if this is it's first appearance, which will be true if any of
+    // the following criteria are met.
+    // (i)   the particle is a ghost
+    // (ii)  same i.d. as current active particle
+    // (iii) neighbour is on lower timestep level
+    // (iv)  the neighbour is on same timestep level as current particle but has larger id value
+    for (int p=0; p<npart; p++) {
+      do_appearance[p] = (neibpart.flags.is_mirror()) ||
+        (level[p] > neibpart.level) ||
+        (level[p] == neibpart.level &&  iorig[p] < neibpart.iorig);
+    }
+  }
+
+  template<class InParticleType>
+  void _first_appearance(const int level[MAX_NPART], const int iorig[MAX_NPART], const int npart,
+			 const ParticleType& neibpart, _false_type,
+			 bool do_appearance[MAX_NPART]) {
+    for (int p=0; p<npart; p++) do_appearance[p] = true;
+  }
 
   template<class InParticleType>
   bool _scatter_overlap(const InParticleType& p, double drsqd, double rmax, _false_type) {
@@ -700,6 +877,20 @@ private:
     return false;
   }
 
+  inline void _scatter_overlap(const FLOAT h, const FLOAT drsqd[MAX_NPART], const FLOAT rmax,
+			       _false_type,
+			       bool mask[MAX_NPART], const int npart,
+			       bool scatter_mask[MAX_NPART]) {
+    FLOAT h1 = rmax + _kernrange*h;
+    FLOAT h1sqd = h1*h1;
+    for (int p=0; p<npart; p++) if (mask[p]) scatter_mask[p] = drsqd[p] < h1sqd;
+  }
+  inline void _scatter_overlap(const FLOAT h, const FLOAT drsqd[MAX_NPART], const FLOAT rmax,
+			       _true_type,
+			       bool mask[MAX_NPART], const int npart,
+			       bool scatter_mask[MAX_NPART]) {
+    for (int p=0; p<npart; p++) if (mask[p]) scatter_mask[p] = false;
+  }
 
   template<class InParticleType>
   void _AddParticleAndGhosts

@@ -243,6 +243,165 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 
 
 //=================================================================================================
+//  GradhSphTree::UpdateAllSphPropertiesArray
+/// Update all gather SPH properties (e.g. rho, div_v) for all active particles in domain.
+/// Loops over all cells containing active particles, performs a tree walk for all particles in
+/// the cell, and then calls SPH class routine to compute properties from neighbours.
+//=================================================================================================
+template <int ndim, template<int> class ParticleType>
+void GradhSphTree<ndim,ParticleType>::UpdateAllSphPropertiesArray
+ (Sph<ndim> *sph,                          ///< [in] Pointer to SPH object
+  Nbody<ndim> *nbody,                      ///< [in] Pointer to N-body object
+  DomainBox<ndim>& simbox)                 ///< [in] Simulation domain
+{
+  int cactive;                             // No. of active tree cells
+  vector<TreeCellBase<ndim> > celllist;		   // List of active tree cells
+  ParticleType<ndim>* sphdata = reinterpret_cast<ParticleType<ndim>*> (sph->GetSphParticleArray());
+#ifdef MPI_PARALLEL
+  double twork = timing->RunningTime();  // Start time (for load balancing)
+#endif
+
+  debug2("[GradhSphTree::UpdateAllSphProperties]");
+  CodeTiming::BlockTimer timer = timing->StartNewTimer("SPH_PROPERTIES");
+
+  // Make sure we have enough neibmanagers
+  for (int t = neibmanagerbufdens.size(); t < Nthreads; ++t) {
+    neibmanagerbufdens.push_back(NeighbourManagerDensity(sph, simbox));
+  }
+
+  // Find list of all cells that contain active particles
+  cactive = tree->ComputeActiveCellList(celllist);
+  assert(cactive <= tree->gtot);
+
+  // If there are no active cells, return to main loop
+  if (cactive == 0) return;
+
+
+  // Set-up all OMP threads
+  //===============================================================================================
+#pragma omp parallel default(none) shared(cactive,celllist,cout,nbody,sph,sphdata)
+  {
+#if defined _OPENMP
+    const int ithread = omp_get_thread_num();
+#else
+    const int ithread = 0;
+#endif
+    int celldone;                              // Flag if cell is done
+    int cc;                                    // Aux. cell counter
+    int j;                                     // Aux. particle counter
+    int Nactive;                               // No. of active particles in cell
+    int okflag;                                // Flag if particle is done
+    FLOAT hrangesqd;                           // Kernel extent
+    FLOAT hmax;                                // Maximum smoothing length
+    int* activelist = activelistbuf[ithread];   // Local array of active particle-ids
+    ParticleType<ndim>* activepart = activepartbuf[ithread];   // Local array of active particles
+    NeighbourManager<ndim,DensityParticle>& neibmanager = neibmanagerbufdens[ithread];
+
+
+    // Loop over all active cells
+    //=============================================================================================
+#pragma omp for schedule(guided)
+    for (cc=0; cc<cactive; cc++) {
+      TreeCellBase<ndim> cell = celllist[cc];
+
+      celldone = 1;
+      hmax = cell.hmax;
+
+
+      // If hmax is too small so the neighbour lists are invalid, make hmax
+      // larger and then recompute for the current active cell.
+      //-------------------------------------------------------------------------------------------
+      do {
+        // Find list of active particles in current cell
+        Nactive = tree->ComputeActiveParticleList(cell, sphdata, activelist);
+        for (j=0; j<Nactive; j++) activepart[j] = sphdata[activelist[j]];
+
+	// If there are sink particles present, check if any particle is inside
+	// one.  If so, then ensure hmax is large enough.
+	if (sph->sink_particles && hmax < sph->hmin_sink) {
+	  for (j=0; j<Nactive; j++) {
+	    if (activepart[j].flags.check(inside_sink)) {
+	      hmax = sph->hmin_sink;
+	      break;
+	    }
+	  }
+	}
+
+        hmax = (FLOAT) 1.05*hmax;
+        cell.hmax = hmax;
+        celldone = 1;
+
+        // Compute neighbour list for cell from particles on all trees
+        neibmanager.set_target_cell(cell);
+        tree->ComputeGatherNeighbourList(cell,sphdata,hmax,neibmanager);
+        ghosttree->ComputeGatherNeighbourList(cell,sphdata,hmax,neibmanager);
+#ifdef MPI_PARALLEL
+        mpighosttree->ComputeGatherNeighbourList(cell,sphdata,hmax,neibmanager);
+#endif
+        neibmanager.EndSearchGather(cell, sphdata, sph->Nhydromax);
+
+
+        //-----------------------------------------------------------------------------------------
+	// Set gather range as current h multiplied by some tolerance factor
+	hrangesqd = kernrangesqd*hmax*hmax;
+
+	// Compute smoothing length and other gather properties for all active
+	// particles in the cell.
+	okflag = sph->ComputeHArray(activepart, Nactive, hrangesqd, hmax, neibmanager, nbody);
+
+	// If h-computation is invalid, then recompute larger neighbour lists
+	if (okflag == 0) celldone = 0;
+
+	// Validate that gather neighbour list is correct
+#if defined(VERIFY_ALL)
+	for (j=0; j<Nactive; j++) {
+	  Typemask densmask = sph->types[activepart[j].ptype].hmask;
+	  neibmanager.VerifyNeighbourList(activelist[j], sph->Ntot, sphdata, "gather");
+	  neibmanager.VerifyReducedNeighbourList(activelist[j], neiblist, sph->Ntot,
+						 sphdata, densmask, "gather");
+	}
+#endif
+        //-----------------------------------------------------------------------------------------
+
+      } while (celldone == 0);
+      //-------------------------------------------------------------------------------------------
+
+      // Once cell is finished, copy all active particles back to main memory
+      for (j=0; j<Nactive; j++) sphdata[activelist[j]] = activepart[j];
+
+      tree->UpdateHmaxLeaf(cell, sphdata) ;
+
+
+    }
+    //=============================================================================================
+
+  }
+  //===============================================================================================
+
+  // Compute time spent in routine and in each cell for load balancing
+#ifdef MPI_PARALLEL
+  twork = timing->RunningTime() - twork;
+  int Nactivetot=0;
+  tree->AddWorkCost(celllist, twork, Nactivetot);
+#ifdef OUTPUT_ALL
+  cout << "Time computing smoothing lengths : " << twork << "     Nactivetot : " << Nactivetot << endl;
+#endif
+#endif
+
+
+  // Update tree smoothing length values here
+  timer.EndTiming();
+  CodeTiming::BlockTimer timer2 = timing->StartNewTimer("UPDATE_HMAX");
+
+  // Update only the non-leaf cells (we did active leaf cells already).
+  tree->UpdateAllHmaxValues(sphdata, false);
+
+  return;
+}
+
+
+
+//=================================================================================================
 //  GradhSphTree::UpdateAllSphHydroForces
 /// Compute hydro forces for all active SPH particles.
 //=================================================================================================

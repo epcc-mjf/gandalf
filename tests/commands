@@ -1,0 +1,21 @@
+awk -e 'BEGIN {out=0}; /MainLoop()/ {out=1}; out && /^cells searched kept:/ && ! /^cells searched kept:  1 / {print $4 > "cells.txt"; print $5 > "leaf_cells.txt"}' output
+sort -n cells.txt > cells_sorted.txt
+sort -n leaf_cells.txt > leaf_cells_sorted.txt
+awk -e 'BEGIN {sum=0}; {sum++; print $1, sum}' cells_sorted.txt > F.txt
+awk -e 'BEGIN {sum=0}; {sum++; print $1, sum}' leaf_cells_sorted.txt > leaf_F.txt
+
+awk -e 'BEGIN {out=0}; /MainLoop()/ {out=1}; out && /^p\+d\+o/ {print $4 > "part.txt"; print $5 > "neib.txt"}; out && /^neiblist/ {print $4 > "culled_neib.txt"}' output
+sort -n part.txt > part_sorted.txt
+sort -n neib.txt > neib_sorted.txt
+sort -n culled_neib.txt > culled_neib_sorted.txt
+awk -e 'BEGIN {sum=0}; {sum++; print $1, sum}' part_sorted.txt > part_F.txt
+awk -e 'BEGIN {sum=0}; {sum++; print $1, sum}' neib_sorted.txt > neib_F.txt
+awk -e 'BEGIN {sum=0}; {sum++; print $1, sum}' culled_neib_sorted.txt > culled_neib_F.txt
+
+gnuplot
+set logscale x
+plot "F.txt" with points pt 0
+plot "leaf_F.txt" with points pt 0
+plot "part_F.txt" with points pt 0
+plot "neib_F.txt" with points pt 0
+plot "culled_neib_F.txt" with points pt 0

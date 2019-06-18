@@ -25,6 +25,7 @@
 #define _GHOST_NEIGHBOURS_H_
 
 #include "DomainBox.h"
+#include "SIMD.h"
 #include "Precision.h"
 #include "Particle.h"
 #include "TreeCell.h"
@@ -167,6 +168,32 @@ public:
 	  return bound ;
 	}
 
+	//=================================================================================================
+	/// \brief  Apply 'periodic' correction.
+	/// \author Mark Filipiak
+	/// \date   5 June 2019
+	/// \return Nothing
+	//=================================================================================================
+        void PartlyApplyPeriodicDistanceCorrection(FLOAT r[ndim], FLOAT dr[ndim][MAX_NPART],
+						   bool mask[MAX_NPART], const int npart) const
+	{
+	  if (_any_periodic) {
+	    for (int k=0; k<ndim; k++) {
+	      if (_periodic_bound[k]) {
+		for (int p=0; p<npart; p++) {
+		  if (mask[p]) {
+		    if (dr[k][p] > _domain.half[k])
+		      dr[k][p] += - _domain.size[k];
+		    else if (dr[k][p] < -_domain.half[k]) {
+		      dr[k][p] += _domain.size[k];
+		    }
+		  }
+		}
+	      }
+	    }
+	  }
+	}
+
     //=================================================================================================
     /// \brief  Find 'periodic' correction vector.
     /// \author D. A. Hubber, G. Rosotti
@@ -255,7 +282,7 @@ public:
 	int ConstructGhostsScatterGather(const InParticleType<ndim>& p, vector<OutParticleType>& ngbs) const
 	{
 	  // First find the nearest periodic mirror
-	  ngbs.push_back(p);
+	  ngbs.emplace_back(p);
 	  if (_any_periodic)
 		_MakePeriodicGhost(ngbs.back()) ;
 
@@ -305,7 +332,7 @@ public:
     int ConstructGhostsGather(const ParticleType<ndim>& p, vector<OutParticleType>& ngbs) const
     {
       // First find the nearest periodic mirror
-      ngbs.push_back(p);
+      ngbs.emplace_back(p);
       if (_any_periodic)
         _MakePeriodicGhost(ngbs.back()) ;
 

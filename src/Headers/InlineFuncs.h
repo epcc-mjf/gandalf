@@ -40,6 +40,7 @@
 #include <assert.h>
 #include <string>
 #include <math.h>
+#include "SIMD.h"
 #include "Precision.h"
 #include "Constants.h"
 #include "Particle.h"
@@ -61,6 +62,62 @@ inline T DotProduct(T *v1, T *v2, int ndim)
     return v1[0]*v2[0] + v1[1]*v2[1];
   else
     return v1[0]*v2[0] + v1[1]*v2[1] + v1[2]*v2[2];
+}
+
+////=================================================================================================
+////  DotProduct - SIMD version
+////  Calculates the dot product between two vectors, v1 and v2,
+////  of given length 'ndim'
+////=================================================================================================
+//template <typename T>
+//inline void DotProduct(T *v1, T *v2, int ndim, int npart, T *d)
+//{
+//  /* This is an unrolled version of:
+//  for (int p=0; p<npart; p++) d[p] = v1[0][p]*v2[0][p];
+//  for (int k=1; k<ndim; k++) {
+//    for (int p=0; p<npart; p++) d[p] += v1[k][p]*v2[k][p];
+//  }
+//  */
+//  if (ndim == 1)
+//    for (int p=0; p<npart; p++) d[p]  = v1[0][p]*v2[0][p];
+//  else if (ndim == 2) {
+//    for (int p=0; p<npart; p++) d[p]  = v1[0][p]*v2[0][p];
+//    for (int p=0; p<npart; p++) d[p] += v1[1][p]*v2[1][p];
+//  }
+//  else {
+//    for (int p=0; p<npart; p++) d[p]  = v1[0][p]*v2[0][p];
+//    for (int p=0; p<npart; p++) d[p] += v1[1][p]*v2[1][p];
+//    for (int p=0; p<npart; p++) d[p] += v1[2][p]*v2[2][p];
+//  }
+//}
+
+//=================================================================================================
+//  DotProduct - SIMD version for FLOATs (there
+//  Calculates the dot product between two vectors, v1 and v2,
+//  of given length 'ndim'
+//=================================================================================================
+template <int ndim>
+inline void DotProduct(FLOAT v1[ndim][MAX_NPART], FLOAT v2[ndim][MAX_NPART],
+		       bool mask[MAX_NPART], int npart,
+		       FLOAT d[MAX_NPART])
+{
+  /* This is an unrolled version of:
+  for (int p=0; p<npart; p++) if (mask[p]) d[p] = v1[0][p]*v2[0][p];
+  for (int k=1; k<ndim; k++) {
+    for (int p=0; p<npart; p++) if (mask[p]) d[p] += v1[k][p]*v2[k][p];
+  }
+  */
+  if (ndim == 1)
+    for (int p=0; p<npart; p++) if (mask[p]) d[p]  = v1[0][p]*v2[0][p];
+  else if (ndim == 2) {
+    for (int p=0; p<npart; p++) if (mask[p]) d[p]  = v1[0][p]*v2[0][p];
+    for (int p=0; p<npart; p++) if (mask[p]) d[p] += v1[1][p]*v2[1][p];
+  }
+  else {
+    for (int p=0; p<npart; p++) if (mask[p]) d[p]  = v1[0][p]*v2[0][p];
+    for (int p=0; p<npart; p++) if (mask[p]) d[p] += v1[1][p]*v2[1][p];
+    for (int p=0; p<npart; p++) if (mask[p]) d[p] += v1[2][p]*v2[2][p];
+  }
 }
 
 //=================================================================================================

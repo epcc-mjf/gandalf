@@ -117,6 +117,8 @@ class Sph : public Hydrodynamics<ndim>
   //-----------------------------------------------------------------------------------------------
   virtual int ComputeH(SphParticle<ndim> &, FLOAT, const NeighbourList<DensityParticle> &,
                        Nbody<ndim> *) = 0;
+  virtual int ComputeHArray(SphParticle<ndim>*, const int, FLOAT, FLOAT,
+			    const NeighbourManager<ndim,DensityParticle>&, Nbody<ndim> *) = 0;
   virtual void ComputeThermalProperties(SphParticle<ndim> &) = 0;
   virtual void ComputeStarGravForces(const int, NbodyParticle<ndim> **, SphParticle<ndim> &) = 0;
 
@@ -224,6 +226,7 @@ public:
   using Sph<ndim>::Nhydromax;
   using Sph<ndim>::sphdata_unsafe;
   using Sph<ndim>::tdavisc;
+  using Sph<ndim>::types;
 
   using Hydrodynamics<ndim>::rho_sink;
   using Hydrodynamics<ndim>::sink_particles;
@@ -248,6 +251,8 @@ public:
   }
 
   virtual int ComputeH(SphParticle<ndim> &, FLOAT, const NeighbourList<DensityParticle> &, Nbody<ndim> *);
+  virtual int ComputeHArray(SphParticle<ndim>*, const int, FLOAT, FLOAT,
+			    const NeighbourManager<ndim,DensityParticle>&, Nbody<ndim> *);
   void ComputeThermalProperties(SphParticle<ndim> &);
   virtual void ComputeSphGravForces(GradhSphParticle<ndim>&, NeighbourList<HydroNeib>&);
   virtual void ComputeSphHydroGravForces(GradhSphParticle<ndim>&, NeighbourList<HydroNeib>&);
@@ -266,6 +271,20 @@ public:
   {
     return -invndim*h/rho;
     //return -h*invndim*pow(rho, -(FLOAT) 2.0)/((FLOAT) 1.0/rho + (FLOAT) 1.0/rho_sink);
+  }
+
+  inline void h_rho_func(const FLOAT m[MAX_NPART], const FLOAT rho[MAX_NPART], const int npart,
+		    FLOAT h_rho[MAX_NPART]) const
+  {
+    for (int p=0; p<npart; p++) h_rho[p] = h_fac*pow(m[p]/rho[p], invndim);
+    //for (int p=0; p<npart; p++) h_rho[p] = h_fac*pow((FLOAT) 0.5*m[p]*((FLOAT) 1.0/rho[p] + (FLOAT) 1.0/rho_sink), invndim);
+  }
+  inline FLOAT h_rho_deriv(const FLOAT h[MAX_NPART], const FLOAT m[MAX_NPART],
+			   const FLOAT rho[MAX_NPART], const int npart,
+			   FLOAT h_rho_d[MAX_NPART]) const
+  {
+    for (int p=0; p<npart; p++) h_rho_d[p] = -invndim*h[p]/rho[p];
+    //for (int p=0; p<npart; p++) h_rho_d[p] = -h[p]*invndim*pow(rho[p], -(FLOAT) 2.0)/((FLOAT) 1.0/rho[p] + (FLOAT) 1.0/rho_sink);
   }
 
 
@@ -321,6 +340,8 @@ class SM2012Sph: public Sph<ndim>
     return this->template DoDeleteDeadParticles<SM2012SphParticle>() ;
   }
   virtual int ComputeH(SphParticle<ndim> &, FLOAT, const NeighbourList<DensityParticle> &, Nbody<ndim> *);
+  virtual int ComputeHArray(SphParticle<ndim>*, const int, FLOAT, FLOAT,
+			    const NeighbourManager<ndim,DensityParticle>&, Nbody<ndim> *);
   void ComputeThermalProperties(SphParticle<ndim> &);
   void ComputeSphHydroForces(const int, const int, const int *, const FLOAT *, const FLOAT *,
                              const FLOAT *, SphParticle<ndim> &, SphParticle<ndim>* );
