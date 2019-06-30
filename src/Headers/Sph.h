@@ -126,10 +126,6 @@ class Sph : public Hydrodynamics<ndim>
   template<template<int> class Kernel>
   void ComputeCullenAndDehnenViscosity(SphParticle<ndim> &, const NeighbourList<DensityParticle> &,
                                        Kernel<ndim>&);
-  template<template<int> class Kernel>
-  void ComputeCullenAndDehnenViscosity(SphParticle<ndim> &,
-				       const NeighbourManager<ndim,DensityParticle>& neibmanager,
-                                       Kernel<ndim>&);
 #endif
 
   // SPH array memory allocation functions
@@ -480,107 +476,6 @@ Kernel<ndim>& kern)                                 ///< [in] Kernel
 
   parti.dalphadt = (FLOAT)0.1*parti.sound*(max(alpha_visc_min, alpha_loc) - parti.alpha)*invh;
 }
-
-
-//=================================================================================================
-//  Sph::ComputeCullenAndDehnenViscosity SIMD version to be.  This does all
-//  particles, which is not correct.
-/// Compute the viscosity limiter for the Cullen & Dehnen switch
-//=================================================================================================
-template <int ndim>
-template<template<int> class Kernel>
-void Sph<ndim>::ComputeCullenAndDehnenViscosity
-(SphParticle<ndim> & parti,                         ///< [inout] Particle to compute the switch for
-const NeighbourManager<ndim,DensityParticle>& neibmanager,
-Kernel<ndim>& kern)                                 ///< [in] Kernel
-{
-
-  // Buffers for gradients of vectors
-  FLOAT dv[ndim][ndim];
-  FLOAT da[ndim][ndim];
-  FLOAT rr[ndim][ndim];
-  FLOAT dvdx[ndim][ndim];
-  FLOAT dadx[ndim][ndim];
-
-  for (int i=0; i<ndim; ++i)
-    for (int j=0; j<ndim; ++j) {
-      rr[i][j] = da[i][j] = dv[i][j] = dadx[i][j] = dvdx[i][j] = 0 ;
-    }
-
-  FLOAT invh = 1 / parti.h;
-  FLOAT hfac = invh * parti.hfactor / parti.rho ;
-  int Nneib = neibmanager.GetNumNeib();
-  for (int neib=0; neib<Nneib; neib++) {
-    const DensityParticle& neibpart = neibmanager.GetNeib(neib);
-    FLOAT dr[ndim];
-    for (int j=0; j < ndim; j++) dr[j] = neibpart.r[j] - parti.r[j] ;
-    FLOAT w = neibpart.m * hfac * kern.w1(invh * sqrt(DotProduct(dr, dr, ndim)));
-
-    for (int j=0; j < ndim; j++)
-      for (int k=0; k < ndim; k++) {
-        rr[j][k] += w * dr[j] * dr[k] ;
-        dv[j][k] += w * dr[j] * (neibpart.v[k] - parti.v[k]) ;
-        da[j][k] += w * dr[j] * (neibpart.a[k] - parti.a[k]) ;
-      }
-  }
-
-  // Invert the rr matrix and compute the gradients
-  FLOAT T[ndim][ndim] ;
-  InvertMatrix(rr, T) ;
-
-  // Check the accuracy of the integral gradients (using the square of the condition number),
-  // if it's bad, we'll set alpha_loc to alpha_max.
-  double modR(0), modT(0) ;
-  for (int i=0; i<ndim; i++)
-    for (int j=0; j<ndim; j++){
-      modR += rr[i][j]*rr[i][j];
-      modT +=  T[i][j]* T[i][j];
-    }
-  double sqd_condition_number = modR*modT / (ndim*ndim) ;
-
-  FLOAT alpha_loc = 0;
-  if (sqd_condition_number > 1e4) {
-    // Bad gradients
-    alpha_loc = alpha_visc ;
-  } else {
-    // Ok gradients
-    for (int i=0; i<ndim; i++)
-      for (int j=0; j<ndim; j++)
-        for (int k=0; k<ndim; k++) {
-          dvdx[i][j] += T[j][k] * dv[k][i];
-          dadx[i][j] += T[j][k] * da[k][i];
-        }
-
-    // Now compute the components needed for the limiter:
-    FLOAT ddivdt = 0;
-    FLOAT divv2 = 0;
-    for (int i=0; i<ndim; ++i) {
-      ddivdt += dadx[i][i] ;
-      for (int j=0; j<ndim; ++j)
-        ddivdt -= dvdx[i][j]*dvdx[j][i];
-
-      divv2 += dvdx[i][i] ;
-    }
-
-    divv2 *= divv2;
-    FLOAT curlv2 = CurlVelSqd(dvdx) ;
-
-    FLOAT f_balsara = 1 ;
-    if (curlv2 > 0)
-      f_balsara = (divv2 / (divv2 + curlv2)) ;
-
-    if (ddivdt < 0) {
-      alpha_loc = (10 * parti.h*parti.h / (parti.sound*parti.sound)) * f_balsara * (-ddivdt) ;
-      alpha_loc = min(alpha_loc, alpha_visc) ;
-    }
-  }
-
-  if (alpha_loc > parti.alpha)
-    parti.alpha = alpha_loc ;
-
-  parti.dalphadt = (FLOAT)0.1*parti.sound*(max(alpha_visc_min, alpha_loc) - parti.alpha)*invh;
-}
-
 
 
 #endif

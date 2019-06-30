@@ -736,7 +736,10 @@ private:
       // Compute relative position and distance quantities for pair
       for (int k=0; k<ndim; k++) draux[k] = neibpart.r[k] - rp[k];
       if (j < _NPeriodicGhosts)
-	// This changes neibpart.r - is that correct?
+	// This changes neibpart.r - is that correct?  Yes, because in
+	// ComputeHNonArray, for the minimum neighbour potential and the Cullen
+	// and Dehnen viscosity, the reduced neighbour list has to have the
+	// periodic correction:  no periodic correction is applied then.
         GhostFinder.ApplyPeriodicDistanceCorrection(neibpart.r, draux);
 
       const FLOAT drsqd = DotProduct(draux,draux,ndim);
@@ -805,16 +808,9 @@ private:
     // Why not a reference?
     Typemask gravmask = _types->gravmask;
 
-    // Testing
-    for (int p=0; p<npart; p++) culled[p] = false;
-    for (int p=0; p<npart; p++) smoothed_grav[p] = false;
-    for (int p=0; p<npart; p++) direct[p] = false;
-
     // Check the distance. The ones that are not real neighbours
     // are demoted to the direct list
-    ParticleType& neibpart = neibdata[neiblist[neib]];
-    // Testing
-    //const ParticleType& neibpart = neibdata[neiblist[neib]];
+    const ParticleType& neibpart = neibdata[neiblist[neib]];
 
     _first_appearance(level, iorig, npart, neibpart, do_pair_once(), mask,
 		      do_mask);
@@ -827,7 +823,6 @@ private:
       return;
     }
 
-    /*
     // Convert from maps of booleans to scalars and arrays.
     for (int p=0; p<npart; p++) _hydromask[p] = hydromask[p][neibpart.ptype];
     _keep_grav = keep_grav && gravmask[neibpart.ptype];
@@ -837,47 +832,12 @@ private:
       for (int p=0; p<npart; p++) if (do_mask[p]) dr[k][p] = neibpart.r[k] - r[k][p];
 
     if (neib < _NPeriodicGhosts)
-      //  This does not change neibpart.r
       GhostFinder.PartlyApplyPeriodicDistanceCorrection(dr, do_mask, npart);
 
     DotProduct<ndim>(dr, dr, do_mask, npart, drsqd);
 
     // Record if neighbour is direct-sum or and SPH neighbour.
     // If SPH neighbour, also record max. timestep level for neighbour
-    */
-    // Testing
-    for (int k=0; k<ndim; k++)
-      for (int p=0; p<npart; p++) if (do_mask[p]) dr[k][p] = neibpart.r[k] - r[k][p];
-    for (int p=0; p<npart; p++)
-      if (do_mask[p]) {
-	FLOAT draux[ndim];
-	for (int k=0; k<ndim; k++) draux[k] = dr[k][p];
-	
-	if (neib < _NPeriodicGhosts)
-	  // This changes neibpart.r - is that correct?
-	  GhostFinder.ApplyPeriodicDistanceCorrection(neibpart.r, draux);
-
-	drsqd[p] = DotProduct(draux,draux,ndim);
-
-	if (drsqd[p] >= hrangesqd[p] && !_scatter_overlap(neibpart, drsqd[p], 0, gather_only())) {
-	  if (keep_grav) {
-	    if(gravmask[neibpart.ptype]) {
-	      direct[p] = true;
-	    }
-	  }
-	}
-	else {
-	  if (hydromask[p][neibpart.ptype]){
-	    culled[p] = true;
-	  }
-	  else if (keep_grav) {
-	    if (gravmask[neibpart.ptype]) {
-	      smoothed_grav[p] = true;
-	    }
-	  }
-	}
-      }
-    /*
     for (int p=0; p<npart; p++) if (do_mask[p]) hrange_mask[p] = drsqd[p] < hrangesqd[p];
     _scatter_overlap(neibpart, drsqd, (FLOAT) 0.0, gather_only(), do_mask, npart, scatter_mask);
     for (int p=0; p<npart; p++) do_hydro[p] = do_mask[p] &&  (hrange_mask[p] || scatter_mask[p]);
@@ -889,7 +849,6 @@ private:
       for (int p=0; p<npart; p++) smoothed_grav[p] = do_hydro[p] && !_hydromask[p];
       for (int p=0; p<npart; p++) direct[p] = do_grav[p];
     }
-    */
   }
 
   template<class InParticleType>

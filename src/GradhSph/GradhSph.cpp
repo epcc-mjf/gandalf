@@ -386,8 +386,9 @@ int GradhSph<ndim, kernelclass>::ComputeH
   FLOAT drsqd[MAX_NPART];
   int neib;
   // Is it useful to have these as arrays of the size of the number of
-  // neighbours and as arguments, so that the forces routines don't each call
-  // MaskParticleNeib...?
+  // neighbours and as arguments, so that the forces routines (and Cullen and
+  // Dehnen viscosity ) don't each call MaskParticleNeib...?  No, because
+  // MaskParticleNeib does not make aperisodic correction ot the neighbour r.
   bool culled[MAX_NPART];
   bool smoothed_grav[MAX_NPART];
   bool direct[MAX_NPART];
@@ -502,7 +503,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
 			  = rho[p] > (FLOAT) 0.0
 			  && h[p] > h_lower_bound[p]
 			  && fabs(h[p] - h_rho_func(m[p], rho[p]))*invh[p] < h_converge;
-    
+
     // This is to match the scalar case, but we could test for no particle still
     // iterating.
     all = true;
@@ -544,8 +545,9 @@ int GradhSph<ndim, kernelclass>::ComputeH
       }
     }
 
-    // If the smoothing length is too large for the neighbour list, exit routine and flag neighbour
-    // list error in order to generate a larger neighbour list (not properly implemented yet).
+    // If the smoothing length is too large for the neighbour list, exit routine
+    // and flag neighbour list error in order to generate a larger neighbour
+    // list (not properly implemented yet).
     any = false;
     for (int p=0; p<npart; p++) any = any || h[p] > hmax;
     if (any) {
@@ -555,16 +557,15 @@ int GradhSph<ndim, kernelclass>::ComputeH
       // GradhSphTree does recreate the active particle working array again from
       // the main particle array.  So this code is not necessary except to match
       // the serial case exactly.
-      for (int p=0; p<npart; p++) parti[p].h = h[p];
+      for (int p=0; p<npart; p++) parti[p].h        = h[p];
       for (int p=0; p<npart; p++) parti[p].hfactor  = hfactor[p];
-      for (int p=0; p<npart; p++) parti[p].rho = rho[p];
+      for (int p=0; p<npart; p++) parti[p].rho      = rho[p];
       for (int p=0; p<npart; p++) parti[p].invomega = invomega[p];
       for (int p=0; p<npart; p++) parti[p].zeta     = zeta[p];
 
       return 0;
     }
 
-    //
     for (int p=0; p<npart; p++)
       if (iterating[p]) iterating[p] = h[p] > h_lower_bound[p] && h[p] < h_upper_bound[p];
     any = false;
@@ -673,19 +674,142 @@ int GradhSph<ndim, kernelclass>::ComputeH
   // make SIMD.
   for (int p=0; p<npart; p++) ComputeThermalProperties(parti[p]);
 
-  // Cullen and Dehnen viscosity not yet SIMD.
+  // Cullen and Dehnen viscosity depends on sound speed, so has to come after
+  // ComputeThermalProperties.  Cullen and Dehnen viscosity is not yet fully
+  // SIMD.
+  //
+  // It would be safer to copy the information back from parti to the arrays.
   if (tdavisc == cd2010) {
+    // Buffers for gradients of vectors
+    FLOAT dv[MAX_NPART][ndim][ndim];
+    FLOAT da[MAX_NPART][ndim][ndim];
+    FLOAT rr[MAX_NPART][ndim][ndim];
+
+    FLOAT v[ndim][MAX_NPART];
+    FLOAT a[ndim][MAX_NPART];
+    FLOAT sound[MAX_NPART];
+
+    FLOAT hfac[MAX_NPART];
+    FLOAT w[MAX_NPART];
+    FLOAT alpha[MAX_NPART];
+    FLOAT dalphadt[MAX_NPART];
+
+    // These are from the current values:  h[p], invh[p], rho[p], hfactor[p],
+    // level[p], iorig[p], r[k][p], m[p], densmask[p], _hrangesqd[p].
+    for (int k=0; k<ndim; k++)
+      for (int p=0; p<npart; p++) v[k][p]  = parti[p].v[k];
+    for (int k=0; k<ndim; k++)
+      for (int p=0; p<npart; p++) a[k][p]  = parti[p].a[k];
+    for (int p=0; p<npart; p++) alpha[p]   = parti[p].alpha;
+    // This has to be from parti (until ComputeThermalProperties is made SIMD to
+    // use the current values).
+    for (int p=0; p<npart; p++) sound[p]   = parti[p].sound;
+
+    for (int p=0; p<npart; p++) hfac[p] = invh[p] * hfactor[p] / rho[p];
+
     for (int p=0; p<npart; p++)
-      this->ComputeCullenAndDehnenViscosity(parti[p], neibmanager, kern);
+      for (int i=0; i<ndim; ++i)
+	for (int j=0; j<ndim; ++j)
+	  rr[p][i][j] = da[p][i][j] = dv[p][i][j] = (FLOAT) 0.0;
+
+    for (int p=0; p<npart; p++) mask[p] = true;
+    for (int neib=0; neib<Nneib; neib++) {
+      // The hrangesqd used for MaskParticleNeigbourGather is the cell
+      // hrangesqsd broadcast to an array.
+      neibmanager.MaskParticleNeibGather(level, iorig, r, npart, neib, densmask, _hrangesqd, mask,
+					 dr, drsqd, culled, smoothed_grav, direct);
+
+      const DensityParticle& neibpart = neibmanager.GetNeib(neib);
+      for (int p=0; p<npart; p++)
+	if (mask[p] && culled[p]) w[p] = neibpart.m * hfac[p] * kern.w1(invh[p] * sqrt(drsqd[p]));
+
+      for (int p=0; p<npart; p++)
+	if (mask[p] && culled[p])
+	  for (int j=0; j < ndim; j++)
+	    for (int k=0; k < ndim; k++) {
+	      rr[p][j][k] += w[p] * dr[j][p] * dr[k][p];
+	      dv[p][j][k] += w[p] * dr[j][p] * (neibpart.v[k] - v[k][p]);
+	      da[p][j][k] += w[p] * dr[j][p] * (neibpart.a[k] - a[k][p]);
+	    }
+    }
+
+    for (int p=0; p<npart; p++) {
+      FLOAT dvdx[ndim][ndim];
+      FLOAT dadx[ndim][ndim];
+      for (int i=0; i<ndim; ++i)
+	for (int j=0; j<ndim; ++j)
+	  dadx[i][j] = dvdx[i][j] = (FLOAT) 0.0;
+
+      // Invert the rr matrix and compute the gradients
+      FLOAT T[ndim][ndim];
+      InvertMatrix(rr[p], T);
+
+      // Check the accuracy of the integral gradients (using the square of the condition number),
+      // if it's bad, we'll set alpha_loc to alpha_max.
+      double modR(0), modT(0) ;
+      for (int i=0; i<ndim; i++)
+	for (int j=0; j<ndim; j++){
+	  modR += rr[p][i][j]*rr[p][i][j];
+	  modT +=  T[i][j]* T[i][j];
+	}
+      double sqd_condition_number = modR*modT / (ndim*ndim) ;
+
+      FLOAT alpha_loc = (FLOAT) 0.0;
+      if (sqd_condition_number > (double) 1.0e4) {
+	// Bad gradients
+	alpha_loc = alpha_visc ;
+      } else {
+	// Ok gradients
+	for (int i=0; i<ndim; i++)
+	  for (int j=0; j<ndim; j++)
+	    for (int k=0; k<ndim; k++) {
+	      dvdx[i][j] += T[j][k] * dv[p][k][i];
+	      dadx[i][j] += T[j][k] * da[p][k][i];
+	    }
+
+	// Now compute the components needed for the limiter:
+	FLOAT ddivdt = 0;
+	FLOAT divv2 = 0;
+	for (int i=0; i<ndim; ++i) {
+	  ddivdt += dadx[i][i] ;
+	  for (int j=0; j<ndim; ++j)
+	    ddivdt -= dvdx[i][j]*dvdx[j][i];
+
+	  divv2 += dvdx[i][i] ;
+	}
+
+	divv2 *= divv2;
+	FLOAT curlv2 = CurlVelSqd(dvdx) ;
+
+	FLOAT f_balsara = 1 ;
+	if (curlv2 > 0)
+	  f_balsara = (divv2 / (divv2 + curlv2)) ;
+
+	if (ddivdt < 0) {
+	  alpha_loc = (10 * h[p]*h[p] / (sound[p]*sound[p])) * f_balsara * (-ddivdt) ;
+	  alpha_loc = min(alpha_loc, alpha_visc) ;
+	}
+      }
+
+      if (alpha_loc > alpha[p])
+	alpha[p] = alpha_loc ;
+
+      dalphadt[p] = (FLOAT) 0.1 * sound[p]*(max(alpha_visc_min, alpha_loc) - alpha[p])*invh[p];
+    }
+
+    // copy SIMDs back to parti
+    for (int p=0; p<npart; p++) parti[p].alpha = alpha[p];
+    for (int p=0; p<npart; p++) parti[p].dalphadt = dalphadt[p];
   }
 
-  // If h is invalid (i.e. larger than maximum h), then return error code (0)
-  any = false;
-  // This isn't safe:
-  //   for (int p=0; p<npart; p++) any = any || h[p] <= hmax;
-  // the previous two functions don't change parti[p].h, but they could.
-  for (int p=0; p<npart; p++) any = any || parti[p].h <= hmax;
-  if (any) return 1;
+  // If any h is invalid (i.e. larger than maximum h), then return error code
+  // (0).
+  all = true;
+  for (int p=0; p<npart; p++) all = all && h[p] <= hmax;
+  // This is safer - the previous two functions don't change parti[p].h, but
+  // they could:
+  //for (int p=0; p<npart; p++) all = all && parti[p].h <= hmax;
+  if (all) return 1;
   else return 0;
 }
 
