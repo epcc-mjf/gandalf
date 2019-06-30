@@ -92,13 +92,13 @@ inline T DotProduct(T *v1, T *v2, int ndim)
 //}
 
 //=================================================================================================
-//  DotProduct - SIMD version for FLOATs (there
+//  DotProduct - SIMD version for FLOATs
 //  Calculates the dot product between two vectors, v1 and v2,
 //  of given length 'ndim'
 //=================================================================================================
 template <int ndim>
-inline void DotProduct(FLOAT v1[ndim][MAX_NPART], FLOAT v2[ndim][MAX_NPART],
-		       bool mask[MAX_NPART], int npart,
+inline void DotProduct(const FLOAT v1[ndim][MAX_NPART], const FLOAT v2[ndim][MAX_NPART],
+		       const bool mask[MAX_NPART], const int npart,
 		       FLOAT d[MAX_NPART])
 {
   /* This is an unrolled version of:
@@ -106,17 +106,23 @@ inline void DotProduct(FLOAT v1[ndim][MAX_NPART], FLOAT v2[ndim][MAX_NPART],
   for (int k=1; k<ndim; k++) {
     for (int p=0; p<npart; p++) if (mask[p]) d[p] += v1[k][p]*v2[k][p];
   }
+
+  Faster as an expression?
+
   */
-  if (ndim == 1)
+  if (ndim == 1) {
     for (int p=0; p<npart; p++) if (mask[p]) d[p]  = v1[0][p]*v2[0][p];
+  }
   else if (ndim == 2) {
     for (int p=0; p<npart; p++) if (mask[p]) d[p]  = v1[0][p]*v2[0][p];
     for (int p=0; p<npart; p++) if (mask[p]) d[p] += v1[1][p]*v2[1][p];
+    //for (int p=0; p<npart; p++) if (mask[p]) d[p]  = v1[0][p]*v2[0][p] + v1[1][p]*v2[1][p];
   }
   else {
     for (int p=0; p<npart; p++) if (mask[p]) d[p]  = v1[0][p]*v2[0][p];
     for (int p=0; p<npart; p++) if (mask[p]) d[p] += v1[1][p]*v2[1][p];
     for (int p=0; p<npart; p++) if (mask[p]) d[p] += v1[2][p]*v2[2][p];
+    //for (int p=0; p<npart; p++) if (mask[p]) d[p]  = v1[0][p]*v2[0][p] + v1[1][p]*v2[1][p] + v1[2][p]*v2[2][p];
   }
 }
 

@@ -88,8 +88,8 @@ class SphNeighbourSearch : public virtual NeighbourSearch<ndim>
                                    DomainBox<ndim> &simbox) {
     UpdateAllSphProperties(static_cast<Sph<ndim>*>(hydro), nbody, simbox) ;
   }
+  virtual void UpdateAllSphPropertiesNonArray(Sph<ndim> *, Nbody<ndim> *,DomainBox<ndim> &) = 0;
   virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *,DomainBox<ndim> &) = 0;
-  virtual void UpdateAllSphPropertiesArray(Sph<ndim> *, Nbody<ndim> *,DomainBox<ndim> &) = 0;
   virtual void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) =0;
   virtual void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *,
                                   DomainBox<ndim> &, Ewald<ndim> *) = 0;
@@ -156,8 +156,8 @@ protected:
 
 
   //-----------------------------------------------------------------------------------------------
+  virtual void UpdateAllSphPropertiesNonArray(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) = 0;
   virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) = 0;
-  virtual void UpdateAllSphPropertiesArray(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) = 0;
   virtual void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &) =0;
   virtual void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *,
                                   DomainBox<ndim> &, Ewald<ndim> *) = 0;
@@ -227,8 +227,8 @@ private:
 
 
   //-----------------------------------------------------------------------------------------------
+  virtual void UpdateAllSphPropertiesNonArray(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &);
   virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &);
-  virtual void UpdateAllSphPropertiesArray(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &);
   virtual void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &);
   virtual void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *,
                                   DomainBox<ndim> &, Ewald<ndim> *);
@@ -284,8 +284,8 @@ class SM2012SphTree: public SphTree<ndim,ParticleType>
 
 
   //-----------------------------------------------------------------------------------------------
+  virtual void UpdateAllSphPropertiesNonArray(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &){};
   virtual void UpdateAllSphProperties(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &){};
-  virtual void UpdateAllSphPropertiesArray(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &){};
   virtual void UpdateAllSphHydroForces(Sph<ndim> *, Nbody<ndim> *, DomainBox<ndim> &){};
   virtual void UpdateAllSphForces(Sph<ndim> *, Nbody<ndim> *,
                                   DomainBox<ndim> &, Ewald<ndim> *){};

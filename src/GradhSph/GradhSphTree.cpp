@@ -75,13 +75,13 @@ GradhSphTree<ndim,ParticleType>::~GradhSphTree()
 
 
 //=================================================================================================
-//  GradhSphTree::UpdateAllSphProperties
+//  GradhSphTree::UpdateAllSphPropertiesNonArray
 /// Update all gather SPH properties (e.g. rho, div_v) for all active particles in domain.
 /// Loops over all cells containing active particles, performs a tree walk for all particles in
 /// the cell, and then calls SPH class routine to compute properties from neighbours.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
-void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
+void GradhSphTree<ndim,ParticleType>::UpdateAllSphPropertiesNonArray
  (Sph<ndim> *sph,                          ///< [in] Pointer to SPH object
   Nbody<ndim> *nbody,                      ///< [in] Pointer to N-body object
   DomainBox<ndim>& simbox)                 ///< [in] Simulation domain
@@ -185,7 +185,7 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
               neibmanager.GetParticleNeibGather(activepart[j],densmask,hrangesqd);
 
           // Compute smoothing length and other gather properties for ptcl i
-          okflag = sph->ComputeH(activepart[j], hmax, neiblist, nbody);
+          okflag = sph->ComputeHNonArray(activepart[j], hmax, neiblist, nbody);
 
           // If h-computation is invalid, then break from loop and recompute
           // larger neighbour lists
@@ -243,13 +243,13 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
 
 
 //=================================================================================================
-//  GradhSphTree::UpdateAllSphPropertiesArray
+//  GradhSphTree::UpdateAllSphProperties
 /// Update all gather SPH properties (e.g. rho, div_v) for all active particles in domain.
 /// Loops over all cells containing active particles, performs a tree walk for all particles in
 /// the cell, and then calls SPH class routine to compute properties from neighbours.
 //=================================================================================================
 template <int ndim, template<int> class ParticleType>
-void GradhSphTree<ndim,ParticleType>::UpdateAllSphPropertiesArray
+void GradhSphTree<ndim,ParticleType>::UpdateAllSphProperties
  (Sph<ndim> *sph,                          ///< [in] Pointer to SPH object
   Nbody<ndim> *nbody,                      ///< [in] Pointer to N-body object
   DomainBox<ndim>& simbox)                 ///< [in] Simulation domain
@@ -340,14 +340,13 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphPropertiesArray
 #endif
         neibmanager.EndSearchGather(cell, sphdata, sph->Nhydromax);
 
-
         //-----------------------------------------------------------------------------------------
 	// Set gather range as current h multiplied by some tolerance factor
 	hrangesqd = kernrangesqd*hmax*hmax;
 
 	// Compute smoothing length and other gather properties for all active
 	// particles in the cell.
-	okflag = sph->ComputeHArray(activepart, Nactive, hrangesqd, hmax, neibmanager, nbody);
+	okflag = sph->ComputeH(activepart, Nactive, hrangesqd, hmax, neibmanager, nbody);
 
 	// If h-computation is invalid, then recompute larger neighbour lists
 	if (okflag == 0) celldone = 0;
@@ -537,8 +536,10 @@ void GradhSphTree<ndim,ParticleType>::UpdateAllSphHydroForces
     }
     //=============================================================================================
 
-
-    // Propagate the changes in levelneib to the main array
+    // Propagate the changes in levelneib to the main array.  This does not
+    // cause inconsistency:  there is a barrier at the end of the omp for above
+    // (no nowait clause), where sphdata[].levelnieb is used (elements of
+    // sphdata[] being copied to a local array of neighbours).
 #pragma omp for
     for (int i=0; i<sph->Ntot; i++) {
       for (int ithread=0; ithread<Nthreads; ithread++)

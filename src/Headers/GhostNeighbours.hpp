@@ -174,8 +174,8 @@ public:
 	/// \date   5 June 2019
 	/// \return Nothing
 	//=================================================================================================
-        void PartlyApplyPeriodicDistanceCorrection(FLOAT r[ndim], FLOAT dr[ndim][MAX_NPART],
-						   bool mask[MAX_NPART], const int npart) const
+        void PartlyApplyPeriodicDistanceCorrection(FLOAT dr[ndim][MAX_NPART],
+						   const bool mask[MAX_NPART], const int npart) const
 	{
 	  if (_any_periodic) {
 	    for (int k=0; k<ndim; k++) {
