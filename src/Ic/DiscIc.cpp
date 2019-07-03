@@ -100,9 +100,11 @@ void DiscIc<ndim>::Generate(void)
 
   // Compute the particle mass
   FLOAT massi = mass/Npart;
-  if (HaveDust) massi *= 1-DustGasRatio;
-  const FLOAT massi_dust = mass*DustGasRatio/NDust;
-
+  FLOAT massi_dust;
+  if (HaveDust) {
+    massi *= 1-DustGasRatio;
+    massi_dust = mass*DustGasRatio/NDust;
+  }
 
   // Normalisation of sound speed at rin
   const FLOAT cs0 = H_r*std::sqrt(GStar_M/rin);
