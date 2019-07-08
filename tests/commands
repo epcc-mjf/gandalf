@@ -16,9 +16,23 @@ awk -e 'BEGIN {out=0}; /MainLoop()/ {out=1}; out && /^Nactive = / {print $3 > "n
 sort -n nactive.txt | uniq -c > nactive_frequency.txt
 
 gnuplot
+
+unset logscale x
+stats "F.txt" using 2 nooutput
+n_F=STATS_max
+stats "leaf_F.txt" using 2 nooutput
+n_leaf_F=STATS_max
+stats "part_F.txt" using 2 nooutput
+n_part_F=STATS_max
+stats "neib_F.txt" using 2 nooutput
+n_neib_F=STATS_max
+stats "culled_neib_F.txt" using 2 nooutput
+n_culled_neib_F=STATS_max
+
 set logscale x
-plot "F.txt" with points pt 0
-plot "leaf_F.txt" with points pt 0
-plot "part_F.txt" with points pt 0
-plot "neib_F.txt" with points pt 0
-plot "culled_neib_F.txt" with points pt 0
+plot "F.txt" using 1:($2/n_F) with points pt 0
+replot "leaf_F.txt" using 1:($2/n_leaf_F) with points pt 0
+
+plot "part_F.txt" using 1:($2/n_part_F) with points pt 0
+replot "neib_F.txt" using 1:($2/n_neib_F) with points pt 0
+replot "culled_neib_F.txt" using 1:($2/n_culled_neib_F) with points pt 0
