@@ -359,31 +359,31 @@ int GradhSph<ndim, kernelclass>::ComputeH
 {
   int j;                               // Neighbour id
   int k;                               // Dimension counter
-  int iteration[MAX_NPART];            // h-rho iteration counter
+  alignas(SIMD_NBYTES) int iteration[MAX_NPART];            // h-rho iteration counter
   int iteration_max = 30;              // Max. no of iterations
-  FLOAT h_lower_bound[MAX_NPART];      // Lower bound on h
-  FLOAT h_upper_bound[MAX_NPART];      // Upper bound on h
-  FLOAT h[MAX_NPART];                  // h
-  FLOAT invh[MAX_NPART];               // 1 / h
-  FLOAT invhsqd[MAX_NPART];            // (1 / h)^2
-  FLOAT ssqd[MAX_NPART];               // Kernel parameter squared, (r/h)^2
-  FLOAT rho[MAX_NPART];                //
-  FLOAT invomega[MAX_NPART];           //
-  FLOAT zeta[MAX_NPART];               //
-  FLOAT hfactor[MAX_NPART];            //
-  FLOAT m[MAX_NPART];                  //
-  FLOAT div_v[MAX_NPART];              //
-  FLOAT gpot[MAX_NPART];               //
+  alignas(SIMD_NBYTES) FLOAT h_lower_bound[MAX_NPART];      // Lower bound on h
+  alignas(SIMD_NBYTES) FLOAT h_upper_bound[MAX_NPART];      // Upper bound on h
+  alignas(SIMD_NBYTES) FLOAT h[MAX_NPART];                  // h
+  alignas(SIMD_NBYTES) FLOAT invh[MAX_NPART];               // 1 / h
+  alignas(SIMD_NBYTES) FLOAT invhsqd[MAX_NPART];            // (1 / h)^2
+  alignas(SIMD_NBYTES) FLOAT ssqd[MAX_NPART];               // Kernel parameter squared, (r/h)^2
+  alignas(SIMD_NBYTES) FLOAT rho[MAX_NPART];                //
+  alignas(SIMD_NBYTES) FLOAT invomega[MAX_NPART];           //
+  alignas(SIMD_NBYTES) FLOAT zeta[MAX_NPART];               //
+  alignas(SIMD_NBYTES) FLOAT hfactor[MAX_NPART];            //
+  alignas(SIMD_NBYTES) FLOAT m[MAX_NPART];                  //
+  alignas(SIMD_NBYTES) FLOAT div_v[MAX_NPART];              //
+  alignas(SIMD_NBYTES) FLOAT gpot[MAX_NPART];               //
   bool _potmin[MAX_NPART];             //
   bool _inside_sink[MAX_NPART];        //
 
   bool any, all;
 
-  int level[MAX_NPART];
-  int iorig[MAX_NPART];
-  FLOAT r[ndim][MAX_NPART];
-  FLOAT dr[ndim][MAX_NPART];           // Relative position vector
-  FLOAT drsqd[MAX_NPART];
+  alignas(SIMD_NBYTES) int level[MAX_NPART];
+  alignas(SIMD_NBYTES) int iorig[MAX_NPART];
+  alignas(SIMD_NBYTES) FLOAT r[ndim][MAX_NPART];
+  alignas(SIMD_NBYTES) FLOAT dr[ndim][MAX_NPART];           // Relative position vector
+  alignas(SIMD_NBYTES) FLOAT drsqd[MAX_NPART];
   int neib;
   // Is it useful to have these as arrays of the size of the number of
   // neighbours and as arguments, so that the forces routines (and Cullen and
@@ -420,7 +420,7 @@ int GradhSph<ndim, kernelclass>::ComputeH
 
   // MaskParticleNeib... works with an array of hrangesqd, corresponding to the
   // active particles.  For the h computation, the cell hrangesqd is used.
-  FLOAT _hrangesqd[MAX_NPART];
+  alignas(SIMD_NBYTES) FLOAT _hrangesqd[MAX_NPART];
   for (int p=0; p<npart; p++) _hrangesqd[p] = hrangesqd;
 
   Typemask densmask[MAX_NPART];
@@ -685,14 +685,14 @@ int GradhSph<ndim, kernelclass>::ComputeH
     FLOAT da[MAX_NPART][ndim][ndim];
     FLOAT rr[MAX_NPART][ndim][ndim];
 
-    FLOAT v[ndim][MAX_NPART];
-    FLOAT a[ndim][MAX_NPART];
-    FLOAT sound[MAX_NPART];
+    alignas(SIMD_NBYTES) FLOAT v[ndim][MAX_NPART];
+    alignas(SIMD_NBYTES) FLOAT a[ndim][MAX_NPART];
+    alignas(SIMD_NBYTES) FLOAT sound[MAX_NPART];
 
-    FLOAT hfac[MAX_NPART];
-    FLOAT w[MAX_NPART];
-    FLOAT alpha[MAX_NPART];
-    FLOAT dalphadt[MAX_NPART];
+    alignas(SIMD_NBYTES) FLOAT hfac[MAX_NPART];
+    alignas(SIMD_NBYTES) FLOAT w[MAX_NPART];
+    alignas(SIMD_NBYTES) FLOAT alpha[MAX_NPART];
+    alignas(SIMD_NBYTES) FLOAT dalphadt[MAX_NPART];
 
     // These are from the current values:  h[p], invh[p], rho[p], hfactor[p],
     // level[p], iorig[p], r[k][p], m[p], densmask[p], _hrangesqd[p].
